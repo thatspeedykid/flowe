@@ -10,9 +10,19 @@
 [![Python](https://img.shields.io/badge/python-3.8%2B-yellow?style=flat-square)](https://python.org)
 [![Buy me a coffee](https://img.shields.io/badge/PayPal-Buy%20me%20a%20coffee-7aaa40?style=flat-square&logo=paypal)](https://www.paypal.com/paypalme/speeddevilx)
 
-*Monthly budgets · Debt snowball · Net worth · Event planning — 100% offline, 100% open source.*
+*Monthly budgets · Debt snowball · Net worth · Event planning · Split costs — 100% offline, 100% open source.*
 
 </div>
+
+## Screenshots
+
+| Budget | Debt Snowball |
+|:---:|:---:|
+| ![Budget](github/screenshots/budget.png) | ![Snowball](github/screenshots/snowball.png) |
+
+| Net Worth | Event Budget |
+|:---:|:---:|
+| ![Net Worth](github/screenshots/networth.png) | ![Events](github/screenshots/events.png) |
 
 ---
 
@@ -27,17 +37,6 @@ It runs as a native-feeling desktop window using Edge or Chrome's app mode, so t
 Whether you're trying to get out of debt, track your net worth over time, or plan a big event without blowing your budget, flo gives you the tools without the bloat.
 
 ---
-
-## Screenshots
-
-| Budget | Debt Snowball |
-|:---:|:---:|
-| ![Budget](github/screenshots/budget.png) | ![Snowball](github/screenshots/snowball.png) |
-
-| Net Worth | Event Budget |
-|:---:|:---:|
-| ![Net Worth](github/screenshots/networth.png) | ![Events](github/screenshots/events.png) |
-
 
 ---
 
@@ -67,10 +66,10 @@ Whether you're trying to get out of debt, track your net worth over time, or pla
 - Plan vacations, weddings, holidays, any one-time event
 - Budget cap with real-time progress bar
 - Mark individual items as paid
-- Split cost calculator across any number of people
+- Split cost calculator — add people, set custom amounts per person, see total collected vs target
 
 **Other**
-- Dark and light theme, saved across sessions
+- Dark and light theme via ⚙️ settings gear — saved across sessions
 - Keyboard friendly
 - Works on 768px+ screens
 
@@ -81,7 +80,7 @@ Whether you're trying to get out of debt, track your net worth over time, or pla
 ### Run from source (any platform)
 
 ```bash
-git clone https://github.com/yourusername/flo
+git clone https://github.com/thatspeedykid/flo
 cd flo/src
 python server.py
 ```
@@ -159,6 +158,29 @@ flo/
 ├── LICENSE
 └── README.md
 ```
+
+---
+
+## Changelog
+
+### v1.2 — February 2026
+- **Single-click launch fixed** — app now opens reliably on first click every time. Previously required double-clicking after a fresh install
+- **Split cost calculator redesigned** — now fully independent from the event budget total. Enter any amount, assign custom amounts per person, see total collected vs target
+- **Settings gear** — dark/light mode toggle moved behind a ⚙️ gear button in the save bar, keeping the UI cleaner
+- **Light mode color scheme** — completely reworked with warm tones and proper contrast for all UI elements
+- **Status bar & theme toggle** — both now live inside the tab bar so they never hide behind the menu when scrolling
+
+### v1.1 — January 2026
+- Larger fonts and UI elements throughout
+- Flo logo and "Buy me a coffee" button added to header
+- Open source branding
+- Linux build support
+
+### v1.0 — Initial release
+- Monthly budget with CSV export and carry-over
+- Debt snowball tracker with auto-sync from budget
+- Net worth tracker with snapshots
+- Event budget planner with split cost calculator
 
 ---
 
