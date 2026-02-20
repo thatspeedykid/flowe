@@ -1,5 +1,12 @@
 <div align="center">
 
+<svg width="80" height="80" viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <circle cx="15" cy="15" r="14" fill="#111" stroke="#c8f560" stroke-width="1.5"/>
+  <path d="M6 18 C9 12, 13 15, 15 13 C17 11, 21 9, 24 12" stroke="#c8f560" stroke-width="2.2" stroke-linecap="round" fill="none"/>
+  <path d="M6 21 C9 15, 13 18, 15 16 C17 14, 21 12, 24 15" stroke="#60f5a0" stroke-width="1.4" stroke-linecap="round" fill="none" opacity="0.55"/>
+  <circle cx="24" cy="12" r="2.2" fill="#c8f560"/>
+</svg>
+
 # flo
 
 **Simple budget app and tracking.**
@@ -95,13 +102,19 @@ No dependencies. Pure Python stdlib. Works on Python 3.8+.
 
 **Windows**
 
-Requirements: Python 3.8–3.12 on PATH.
+**Step 1 — Install Python** (if you don't have it)
 
-Just double-click `build_windows.bat`. It installs pyinstaller, generates the icon, and produces `src/dist/flo.exe`.
+1. Go to [python.org/downloads](https://www.python.org/downloads/)
+2. Download **Python 3.12** (not 3.13+)
+3. Run the installer — **check "Add Python to PATH"** at the bottom before clicking Install
+
+> ⚠️ Make sure "Add Python to PATH" is checked or the build will fail.
+
+**Step 2 — Build flo**
+
+Just double-click `build_windows.bat`. It installs PyInstaller automatically and produces `src/dist/flo.exe`.
 
 Double-click `flo.exe` to run. Opens in Edge app-mode — no browser UI, no address bar.
-
-> Use Python 3.8–3.12. Python 3.13+ may have issues with some PyInstaller hooks.
 
 **Linux**
 
