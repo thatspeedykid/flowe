@@ -38,7 +38,6 @@ Whether you're trying to get out of debt, track your net worth over time, or pla
 |:---:|:---:|
 | ![Net Worth](github/screenshots/networth.png) | ![Events](github/screenshots/events.png) |
 
-> Replace placeholder images in `github/screenshots/` with real screenshots after running the app.
 
 ---
 
