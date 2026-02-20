@@ -1,11 +1,7 @@
+
 <div align="center">
 
-<svg width="80" height="80" viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <circle cx="15" cy="15" r="14" fill="#111" stroke="#c8f560" stroke-width="1.5"/>
-  <path d="M6 18 C9 12, 13 15, 15 13 C17 11, 21 9, 24 12" stroke="#c8f560" stroke-width="2.2" stroke-linecap="round" fill="none"/>
-  <path d="M6 21 C9 15, 13 18, 15 16 C17 14, 21 12, 24 15" stroke="#60f5a0" stroke-width="1.4" stroke-linecap="round" fill="none" opacity="0.55"/>
-  <circle cx="24" cy="12" r="2.2" fill="#c8f560"/>
-</svg>
+<img src="https://raw.githubusercontent.com/thatspeedykid/flo/main/github/flo_logo.svg" width="80" height="80" alt="flo logo">
 
 # flo
 
