@@ -1,12 +1,11 @@
 #!/usr/bin/env bash
 # flo — Linux Build Script
-# Produces: src/dist/flo
-# Usage: chmod +x build_linux.sh && ./build_linux.sh
+# Usage: bash build_linux.sh
 
-set -e
 cd "$(dirname "$0")"
+REPO_DIR="$(pwd)"
 
-GREEN='\033[0;32m'; YELLOW='\033[1;33m'; RED='\033[0;31m'; NC='\033[0m'
+GREEN='\033[0;32m'; RED='\033[0;31m'; NC='\033[0m'
 
 echo ""
 echo "========================================"
@@ -15,36 +14,53 @@ echo "  Linux Build Script"
 echo "========================================"
 echo ""
 
-# ── Python deps only — no pywebview needed ────────────────────────────────
+# ── Install build tools ───────────────────────────────────────────────────────
 echo -e "${GREEN}[1/2]${NC} Installing build tools..."
-python3 -m pip install pyinstaller pillow --quiet
+
+# Try venv approach first (cleanest), fall back to --break-system-packages
+python3 -m venv "$HOME/flo_venv" --clear 2>/dev/null || true
+if [ -f "$HOME/flo_venv/bin/pip" ]; then
+    "$HOME/flo_venv/bin/pip" install pyinstaller pillow --quiet
+    PYINSTALLER="$HOME/flo_venv/bin/python3 -m PyInstaller"
+else
+    python3 -m pip install pyinstaller pillow --quiet --break-system-packages
+    PYINSTALLER="python3 -m PyInstaller"
+fi
+
 echo -e "  ${GREEN}✓${NC} Done"
 echo ""
 
-# ── Build ─────────────────────────────────────────────────────────────────
+# ── Build ─────────────────────────────────────────────────────────────────────
 echo -e "${GREEN}[2/2]${NC} Building (1-3 minutes)..."
 echo ""
-cd src
-python3 -m PyInstaller flo_linux.spec --noconfirm
 
-if [ ! -f "dist/flo" ]; then
-    echo -e "${RED}[ERROR]${NC} dist/flo not found."
+BUILD_DIR="$HOME/flo_build"
+rm -rf "$BUILD_DIR"
+mkdir -p "$BUILD_DIR"
+
+cp "$REPO_DIR/src/flo_linux.py"   "$BUILD_DIR/"
+cp "$REPO_DIR/src/flo_linux.spec" "$BUILD_DIR/"
+cp "$REPO_DIR/src/app.html"       "$BUILD_DIR/"
+
+cd "$BUILD_DIR"
+$PYINSTALLER flo_linux.spec --noconfirm \
+    --distpath "$BUILD_DIR/dist" \
+    --workpath "$BUILD_DIR/work"
+
+if [ ! -f "$BUILD_DIR/dist/flo" ]; then
+    echo -e "${RED}[ERROR]${NC} Build failed — binary not found."
     exit 1
 fi
 
-rm -rf build/
-cd ..
+mkdir -p "$REPO_DIR/src/dist"
+cp "$BUILD_DIR/dist/flo" "$REPO_DIR/src/dist/flo"
+rm -rf "$BUILD_DIR"
 
-SIZE=$(du -sh src/dist/flo | cut -f1)
+SIZE=$(du -sh "$REPO_DIR/src/dist/flo" | cut -f1)
 echo ""
 echo "========================================"
 echo -e "  ${GREEN}DONE${NC} — src/dist/flo ($SIZE)"
 echo "========================================"
 echo ""
-echo "  Run it:          ./src/dist/flo"
-echo "  Opens in Chrome/Chromium in app-mode."
-echo "  No browser UI, no address bar."
-echo ""
-echo "  To install system-wide:"
-echo "    sudo cp src/dist/flo /usr/local/bin/flo"
+echo "  Now run:  bash build_deb.sh"
 echo ""

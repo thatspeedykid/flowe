@@ -3,6 +3,7 @@ Version: 1.3
 Section: finance
 Priority: optional
 Architecture: amd64
+Depends: chromium-browser | chromium | google-chrome-stable
 Maintainer: thatspeedykid <https://github.com/thatspeedykid/flo>
 Description: flo — simple budget app
  A free, open source personal finance app.

@@ -115,16 +115,36 @@ Double-click `flo.exe` to run. Opens in Edge app-mode — no browser UI, no addr
 
 **Linux**
 
+> ⚠️ **Requires Chromium or Google Chrome** — flo uses app-mode for a native window feel (no address bar, no browser UI). Firefox is not supported.
+>
+> Install Chromium first:
+> ```bash
+> sudo apt install chromium-browser
+> ```
+
+**Step 1 — Install Chromium** (if not already installed)
 ```bash
-chmod +x build_linux.sh && ./build_linux.sh
-# Output: src/dist/flo
+sudo apt install chromium-browser
 ```
 
-Opens in Chrome or Chromium app-mode. To install system-wide:
-
+**Step 2 — Build flo**
 ```bash
-sudo cp src/dist/flo /usr/local/bin/flo
+bash build_linux.sh   # builds src/dist/flo
+bash build_deb.sh     # builds installer/flo_1.3_amd64.deb
 ```
+
+**Step 3 — Install**
+```bash
+sudo dpkg -i installer/flo_1.3_amd64.deb
+```
+
+Then launch from your app launcher or type `flo` in a terminal.
+
+> 💡 **End users** downloading `flo_1.3_amd64.deb` also need Chromium installed:
+> ```bash
+> sudo apt install chromium-browser
+> sudo dpkg -i flo_1.3_amd64.deb
+> ```
 
 ---
 

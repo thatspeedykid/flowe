@@ -100,7 +100,7 @@ def start_server():
     raise RuntimeError("No free port")
 
 
-def wait_for_http(port, timeout=10.0):
+def wait_for_http(port, timeout=20.0):
     """Poll until real HTTP 200 — guarantees serve_forever is running."""
     import socket
     req = b"GET /app.html HTTP/1.0\r\nHost: 127.0.0.1\r\n\r\n"
@@ -122,23 +122,54 @@ def wait_for_http(port, timeout=10.0):
 
 
 def find_browser():
+    """Returns (path, kind) — Chromium-based only for proper --app= mode."""
     import shutil
-    for name in ["google-chrome", "google-chrome-stable", "chromium",
-                 "chromium-browser", "brave-browser", "microsoft-edge"]:
+
+    # Expand PATH to include snap and other common locations
+    extra_paths = [
+        "/snap/bin", "/usr/bin", "/usr/local/bin",
+        "/bin", "/opt/google/chrome",
+    ]
+    env_path = os.environ.get("PATH", "")
+    for p in extra_paths:
+        if p not in env_path:
+            env_path = p + ":" + env_path
+    os.environ["PATH"] = env_path
+
+    # Check explicit known paths (covers snap, deb, flatpak installs)
+    explicit_paths = [
+        "/usr/bin/chromium-browser",
+        "/usr/bin/chromium",
+        "/snap/bin/chromium",
+        "/usr/bin/google-chrome",
+        "/usr/bin/google-chrome-stable",
+        "/usr/bin/brave-browser",
+        "/usr/bin/microsoft-edge",
+        "/opt/google/chrome/google-chrome",
+    ]
+    for path in explicit_paths:
+        if os.path.isfile(path) and os.access(path, os.X_OK):
+            return path, "chromium"
+
+    # Also search updated PATH
+    for name in ["chromium-browser", "chromium", "google-chrome",
+                 "google-chrome-stable", "brave-browser", "microsoft-edge"]:
         path = shutil.which(name)
-        if path: return path
-    return None
+        if path: return path, "chromium"
+
+    return None, None
 
 
-def launch_browser(url, browser_path):
+def launch_browser(url, browser_path, kind="chromium"):
     profile = os.path.join(_DATA_DIR, "browser-profile")
     os.makedirs(profile, exist_ok=True)
+    cmd = [browser_path, f"--app={url}", f"--window-size={WIN_W},{WIN_H}",
+           f"--user-data-dir={profile}", "--no-first-run",
+           "--no-default-browser-check", "--disable-extensions",
+           "--disable-background-networking", "--disable-sync"]
     return subprocess.Popen(
-        [browser_path, f"--app={url}", f"--window-size={WIN_W},{WIN_H}",
-         f"--user-data-dir={profile}", "--no-first-run",
-         "--no-default-browser-check", "--disable-extensions",
-         "--disable-background-networking", "--disable-sync"],
-        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+        cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+        start_new_session=True
     )
 
 
@@ -147,23 +178,28 @@ def main():
 
     if not is_new:
         url = f"http://127.0.0.1:{port}/app.html"
-        browser = find_browser()
+        browser, kind = find_browser()
         if browser:
             launch_browser(url, browser).wait()
         else:
-            webbrowser.open(url)
+            print("No Chromium browser found. Install Chromium: sudo apt install chromium-browser")
         return
 
     url = f"http://127.0.0.1:{port}/app.html"
 
     def open_browser():
         wait_for_http(port)
-        browser = find_browser()
+        browser, kind = find_browser()
         if browser:
             proc = launch_browser(url, browser)
             proc.wait()
+            try:
+                import signal
+                os.killpg(os.getpgid(proc.pid), signal.SIGTERM)
+            except Exception:
+                pass
         else:
-            webbrowser.open(url)
+            print("No Chromium browser found. Install with: sudo apt install chromium-browser")
             return
         srv.shutdown()
         os._exit(0)

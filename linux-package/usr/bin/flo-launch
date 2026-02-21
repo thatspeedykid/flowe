@@ -1,0 +1,4 @@
+#!/bin/bash
+# flo launcher — sets up PATH before launching so desktop icons work correctly
+export PATH="/snap/bin:/usr/bin:/usr/local/bin:/bin:/opt/google/chrome:$PATH"
+exec /usr/lib/flo/flo "$@"
