@@ -1,4 +1,3 @@
-
 <div align="center">
 
 <img src="https://raw.githubusercontent.com/thatspeedykid/flo/main/github/flo_logo.svg" width="80" height="80" alt="flo logo">
@@ -14,6 +13,8 @@
 [![Buy me a coffee](https://img.shields.io/badge/PayPal-Buy%20me%20a%20coffee-7aaa40?style=flat-square&logo=paypal)](https://www.paypal.com/paypalme/speeddevilx)
 
 *Monthly budgets · Debt snowball · Net worth · Event planning · Split costs — 100% offline, 100% open source.*
+
+**Current version: v1.3**
 
 </div>
 
@@ -171,6 +172,17 @@ flo/
 ---
 
 ## Changelog
+
+### v1.3 — February 2026
+- **Click-and-drag scrolling** — click and drag anywhere to scroll, with momentum/inertia like a phone
+- **Touch-friendly** — native touch scrolling enabled throughout
+- **No text selection** — clicking and dragging no longer highlights text, feels like a native app
+- **Right-click to paste** — context menu disabled everywhere except input fields where paste still works
+- **Settings gear fixed** — always pinned to the far right of the save bar
+- **Check for update** — settings panel stays open while checking, shows download link if update available
+- **Server shuts down on close** — flo process now exits cleanly when the window closes (no more ghost processes in Task Manager)
+- **Proper installer** — `flo_setup.exe` via Inno Setup, user-scoped install with no UAC prompts, supports upgrades
+- **Responsive layout** — all sections now fill the full window width at any resolution
 
 ### v1.2 — February 2026
 - **Single-click launch fixed** — app now opens reliably on first click every time. Previously required double-clicking after a fresh install

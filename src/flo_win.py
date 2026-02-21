@@ -185,13 +185,18 @@ def main():
         wait_for_http(port)
         browser = find_browser()
         if browser:
-            launch_browser(url, browser)
+            proc = launch_browser(url, browser)
+            proc.wait()           # block until browser window closes
         else:
             webbrowser.open(url)
+            return
+        # Browser closed — shut down the server and exit cleanly
+        srv.shutdown()
+        os._exit(0)
 
     threading.Thread(target=open_browser, daemon=True).start()
 
-    # This blocks forever (until the process is killed when Edge closes)
+    # Serve until open_browser calls srv.shutdown()
     try:
         srv.serve_forever()
     except KeyboardInterrupt:

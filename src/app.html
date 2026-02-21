@@ -16,11 +16,11 @@ body.light{
   --accent:#5a8a00;--accent2:#c0392b;--text:#1c1a17;--muted:#7a7060;
   --green:#1a7a40;--blue:#1a6090;--orange:#b05000;--purple:#7030a0;
 }
-*{box-sizing:border-box;margin:0;padding:0;}
+*{box-sizing:border-box;margin:0;padding:0;}*:not(input):not(textarea):not(select){-webkit-user-select:none;user-select:none;}
 input[type=number]::-webkit-inner-spin-button,
 input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0;}
 input[type=number]{-moz-appearance:textfield;appearance:textfield;}
-body{background:var(--bg);color:var(--text);font-family:'DM Mono',monospace;min-height:100vh;padding:0 0 70px;transition:background 0.2s,color 0.2s;}
+body{background:var(--bg);color:var(--text);font-family:'DM Mono',monospace;min-height:100vh;padding:0 0 70px;transition:background 0.2s,color 0.2s;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;}html{scroll-behavior:smooth;}
 .tab-bar{display:flex;background:var(--surface2);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:10;}
 .tab-btn{flex:1;padding:16px 0;background:none;border:none;font-family:'DM Mono',monospace;font-size:0.82rem;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);cursor:pointer;border-bottom:3px solid transparent;transition:all 0.2s;}
 .tab-btn.active{color:var(--accent);border-bottom-color:var(--accent);}
@@ -30,7 +30,7 @@ h1{font-family:'Playfair Display',serif;font-size:2.8rem;color:var(--accent);tex
 .month-selector{display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:24px;}
 select{background:var(--surface);border:1px solid var(--border);color:var(--text);font-family:'DM Mono',monospace;font-size:0.85rem;padding:6px 10px;border-radius:6px;cursor:pointer;}
 /* ── BUDGET GRID ── */
-.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;max-width:900px;margin:0 auto;}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:0 auto;padding:0 20px;}
 .card.income-card{grid-column:1/-1;}
 @media(max-width:600px){.grid{grid-template-columns:1fr;}.card.income-card{grid-column:1;}}
 .card{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;}
@@ -78,7 +78,7 @@ body.light .row{border-bottom-color:#eee;}
 .chart-legend span{display:flex;align-items:center;gap:4px;}
 .chart-legend span::before{content:'';display:block;width:10px;height:10px;border-radius:2px;}
 /* ── BARS ── */
-.save-bar{position:fixed;bottom:0;left:0;right:0;background:var(--surface2);border-top:1px solid var(--border);padding:10px 16px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap;z-index:10;align-items:center;}
+.save-bar{position:fixed;bottom:0;left:0;right:0;background:var(--surface2);border-top:1px solid var(--border);padding:10px 16px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap;z-index:10;align-items:center;padding-right:52px;}
 .btn{font-family:'DM Mono',monospace;font-size:0.8rem;padding:8px 16px;border-radius:6px;cursor:pointer;border:1px solid var(--border);transition:all 0.15s;color:var(--text);background:none;}
 .btn-primary{background:var(--accent);color:#000;border-color:var(--accent);}
 .btn-primary:hover{filter:brightness(1.1);}
@@ -102,7 +102,7 @@ body.light .row{border-bottom-color:#eee;}
 .settings-label{color:var(--muted);font-size:0.68rem;text-transform:uppercase;letter-spacing:1px;padding:6px 10px 2px;}
 
 /* ── SNOWBALL ── */
-.sb-wrap{max-width:900px;margin:0 auto;}
+.sb-wrap{margin:0 auto;padding:0 20px;}
 .sb-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:14px;}
 .sb-card-header{background:var(--surface2);padding:14px 16px;font-size:0.85rem;text-transform:uppercase;letter-spacing:2px;color:var(--blue);border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;}
 .sb-col-headers{display:grid;gap:6px;padding:6px 12px;font-size:0.62rem;text-transform:uppercase;letter-spacing:1px;color:var(--muted);border-bottom:1px solid var(--border);background:var(--surface2);}
@@ -178,7 +178,7 @@ body.light .sync-notice{background:#edffd0;border-color:#aadd60;color:#4a7a10;}
 .tl-bar{height:8px;border-radius:4px;}
 .tl-event{font-size:0.72rem;color:var(--green);white-space:nowrap;}
 /* ── NET WORTH ── */
-.nw-wrap{max-width:900px;margin:0 auto;}
+.nw-wrap{margin:0 auto;padding:0 20px;}
 .nw-hero{text-align:center;padding:28px 20px 20px;background:var(--surface);border:1px solid var(--border);border-radius:16px;margin-bottom:20px;}
 .nw-hero-label{font-size:0.65rem;text-transform:uppercase;letter-spacing:2px;color:var(--muted);margin-bottom:8px;}
 .nw-hero-val{font-family:'Playfair Display',serif;font-size:3rem;margin-bottom:6px;}
@@ -209,7 +209,7 @@ body.light .sync-notice{background:#edffd0;border-color:#aadd60;color:#4a7a10;}
 .nw-snapshot-delta.up{background:#0d1f0d;color:var(--green);}
 .nw-snapshot-delta.down{background:#1f0d0d;color:var(--accent2);}
 /* ── EVENTS ── */
-.ev-wrap{max-width:900px;margin:0 auto;}
+.ev-wrap{margin:0 auto;padding:0 20px;}
 .ev-name-input{background:var(--surface);border:1px solid var(--border);color:var(--text);font-family:'DM Mono',monospace;font-size:0.9rem;padding:8px 12px;border-radius:6px;outline:none;width:100%;}
 .ev-name-input:focus{border-color:var(--accent);}
 .ev-cap-input{width:110px;background:var(--surface);border:1px solid var(--border);color:var(--accent);font-family:'DM Mono',monospace;font-size:0.9rem;padding:7px 10px;border-radius:6px;text-align:right;outline:none;}
@@ -256,7 +256,7 @@ body.light .sync-notice{background:#edffd0;border-color:#aadd60;color:#4a7a10;}
 .split-note{font-size:0.68rem;color:var(--muted);text-align:center;margin-top:8px;}
 
 /* ── FLO TITLEBAR ── */
-.flo-titlebar{display:flex;align-items:center;justify-content:space-between;padding:10px 18px 0;max-width:1100px;margin:0 auto 2px;}
+.flo-titlebar{display:flex;align-items:center;justify-content:space-between;padding:10px 18px 0;margin:0 auto 2px;}
 .flo-logo{display:flex;align-items:center;gap:9px;}
 .flo-wordmark{font-family:'Playfair Display',serif;font-size:1.9rem;color:var(--accent);letter-spacing:-0.5px;line-height:1;}
 .flo-tagline{font-size:0.72rem;text-transform:uppercase;letter-spacing:2px;color:var(--muted);margin-top:3px;}
@@ -449,14 +449,18 @@ body.light .sync-notice{background:#edffd0;border-color:#aadd60;color:#4a7a10;}
 
 
 <!-- Settings panel -->
-<div id="settingsPanel" style="display:none;position:fixed;bottom:64px;right:14px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 0;min-width:170px;z-index:50;box-shadow:0 4px 20px rgba(0,0,0,0.4);">
+<div id="settingsPanel" style="display:none;position:fixed;bottom:64px;right:14px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 0;min-width:200px;z-index:50;box-shadow:0 4px 20px rgba(0,0,0,0.4);">
   <div style="padding:4px 14px 8px;font-size:0.6rem;text-transform:uppercase;letter-spacing:2px;color:var(--muted);border-bottom:1px solid var(--border);margin-bottom:4px;">Display</div>
   <button onclick="toggleTheme();toggleSettings()" style="width:100%;background:none;border:none;text-align:left;padding:8px 16px;font-family:'DM Mono',monospace;font-size:0.82rem;color:var(--text);cursor:pointer;" id="themePanelBtn">☀️ Light mode</button>
+  <div style="padding:4px 14px 8px;font-size:0.6rem;text-transform:uppercase;letter-spacing:2px;color:var(--muted);border-top:1px solid var(--border);border-bottom:1px solid var(--border);margin-top:4px;margin-bottom:4px;">About</div>
+  <button onclick="checkForUpdate()" style="width:100%;background:none;border:none;text-align:left;padding:8px 16px;font-family:'DM Mono',monospace;font-size:0.82rem;color:var(--text);cursor:pointer;" id="updateBtn">🔄 Check for update</button>
+  <div style="padding:6px 16px 4px;font-size:0.72rem;color:var(--muted);">flo v1.3 — <a href="https://github.com/thatspeedykid/flo" target="_blank" style="color:var(--accent);text-decoration:none;">github</a></div>
 </div>
 
 <div class="toast" id="toast"></div>
 
 <script>
+const APP_VERSION='1.3';
 const MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
 const PALETTE=['#c8f560','#60c8f5','#f5a060','#f56060','#a060f5','#60f5a0','#f560c8','#f5d060'];
 const API='http://127.0.0.1:5757';
@@ -1115,15 +1119,29 @@ function renderSplitRows(){
   if(splitPeople.length===0){wrap.innerHTML='';return;}
   const total=parseFloat(document.getElementById('splitTotal').value)||0;
   const even=splitPeople.length>0?total/splitPeople.length:0;
-  wrap.innerHTML=splitPeople.map((p,i)=>
-    '<div class="split-row">'+
-      '<span class="split-row-name">'+esc(p.name)+'</span>'+
-      '<input class="split-row-amt" type="number" step="0.01" min="0" value="'+
-        (p.amount!==''?p.amount:even.toFixed(2))+
-      '" oninput="updateSplitAmt('+i+',this.value)" placeholder="'+even.toFixed(2)+'">'+
-      '<button class="split-row-del" onclick="removeSplitPerson('+i+')">✕</button>'+
-    '</div>'
-  ).join('');
+  // Only rebuild DOM if count changed — preserves focus
+  const existing=wrap.querySelectorAll('.split-row');
+  if(existing.length!==splitPeople.length){
+    wrap.innerHTML=splitPeople.map((p,i)=>
+      '<div class="split-row">'+
+        '<span class="split-row-name">'+esc(p.name)+'</span>'+
+        '<input class="split-row-amt" type="number" step="0.01" min="0" value="'+
+          (p.amount!==''?p.amount:even.toFixed(2))+
+        '" oninput="updateSplitAmt('+i+',this.value)" placeholder="'+even.toFixed(2)+'">'+
+        '<button class="split-row-del" onclick="removeSplitPerson('+i+')">✕</button>'+
+      '</div>'
+    ).join('');
+  } else {
+    // Just update placeholders without touching focused input
+    const inputs=wrap.querySelectorAll('.split-row-amt');
+    inputs.forEach((inp,i)=>{
+      inp.placeholder=even.toFixed(2);
+      // Only update value if not currently focused
+      if(document.activeElement!==inp){
+        inp.value=splitPeople[i].amount!==''?splitPeople[i].amount:even.toFixed(2);
+      }
+    });
+  }
 }
 function calcSplit(){
   const total=parseFloat(document.getElementById('splitTotal').value)||0;
@@ -1153,6 +1171,26 @@ function calcSplit(){
 }
 
 
+function checkForUpdate(){
+  const btn=document.getElementById('updateBtn');
+  btn.textContent='🔄 Checking...';
+  fetch('https://api.github.com/repos/thatspeedykid/flo/releases/latest')
+    .then(r=>r.json())
+    .then(data=>{
+      const latest=(data.tag_name||'').replace(/^v/,'');
+      if(!latest){btn.textContent='⚠️ Could not check';return;}
+      if(latest===APP_VERSION||latest<APP_VERSION){
+        btn.textContent='✓ Up to date';
+        setTimeout(()=>{btn.textContent='🔄 Check for update';},3000);
+      } else {
+        btn.textContent='⬆️ v'+latest+' — download';
+        btn.style.color='var(--accent)';
+        btn.onclick=()=>{window.open('https://github.com/thatspeedykid/flo/releases/latest','_blank');};
+      }
+    })
+    .catch(()=>{btn.textContent='⚠️ No connection';setTimeout(()=>{btn.textContent='🔄 Check for update';},3000);});
+  // Keep panel open — don't call toggleSettings
+}
 function toggleSettings(e){
   e.stopPropagation();
   const d=document.getElementById('settingsPanel');
@@ -1179,6 +1217,71 @@ async function startup(){
   loadEvents();
 }
 startup();
+
+
+// ── Right-click: block context menu except on inputs (for paste) ─────────────
+document.addEventListener('contextmenu',e=>{
+  const tag=e.target.tagName;
+  if(tag==='INPUT'||tag==='TEXTAREA')return; // allow paste on inputs
+  e.preventDefault();
+});
+
+// ── Click-and-drag scroll ─────────────────────────────────────────────────
+(function(){
+  let isDown=false, startY=0, scrollY=0, velY=0, lastY=0, lastT=0, rafId=null;
+  const FRICTION=0.92;
+
+  function cancelMomentum(){if(rafId){cancelAnimationFrame(rafId);rafId=null;}}
+
+  function momentum(){
+    velY*=FRICTION;
+    if(Math.abs(velY)<0.5){cancelMomentum();return;}
+    window.scrollBy(0,velY);
+    rafId=requestAnimationFrame(momentum);
+  }
+
+  // Only drag-scroll when clicking on non-interactive elements
+  function isScrollable(el){
+    const tags=['INPUT','TEXTAREA','SELECT','BUTTON','A','LABEL'];
+    while(el&&el!==document.body){
+      if(tags.includes(el.tagName))return false;
+      if(el.classList&&(el.classList.contains('tab-btn')||el.classList.contains('btn')))return false;
+      el=el.parentElement;
+    }
+    return true;
+  }
+
+  document.addEventListener('mousedown',e=>{
+    if(e.button!==0||!isScrollable(e.target))return;
+    cancelMomentum();
+    isDown=true;
+    startY=e.clientY;
+    scrollY=window.scrollY;
+    velY=0; lastY=e.clientY; lastT=Date.now();
+    document.body.style.userSelect='none';
+    document.body.style.cursor='grabbing';
+  });
+
+  document.addEventListener('mousemove',e=>{
+    if(!isDown)return;
+    const now=Date.now(), dt=now-lastT||1;
+    velY=(lastY-e.clientY)/dt*16; // pixels per frame
+    lastY=e.clientY; lastT=now;
+    window.scrollTo(0, scrollY+(startY-e.clientY));
+  });
+
+  function stopDrag(){
+    if(!isDown)return;
+    isDown=false;
+    document.body.style.userSelect='';
+    document.body.style.cursor='';
+    if(Math.abs(velY)>1)rafId=requestAnimationFrame(momentum);
+  }
+
+  document.addEventListener('mouseup',stopDrag);
+  document.addEventListener('mouseleave',stopDrag);
+})();
+
 </script>
 </body>
 </html>
