@@ -1,9 +1,8 @@
 """
 flo - simple budget app
-Linux launcher. Serves app.html from memory — no file path issues.
-Pure stdlib only.
+Linux launcher. Serves app.html from memory. Pure stdlib.
 """
-import os, sys, time, socket, threading, json, subprocess, webbrowser
+import os, sys, time, threading, json, subprocess, webbrowser
 import http.server
 
 if getattr(sys, "frozen", False):
@@ -16,11 +15,7 @@ try:
     with open(_HTML_PATH, "rb") as _f:
         _APP_HTML = _f.read()
 except Exception as _e:
-    _APP_HTML = f"""<!DOCTYPE html><html><body style="font:16px sans-serif;padding:40px">
-    <h2>flo could not start</h2>
-    <p>Could not load app.html from: <code>{_HTML_PATH}</code></p>
-    <p>Error: {_e}</p>
-    </body></html>""".encode()
+    _APP_HTML = f"<html><body><h2>flo could not start</h2><p>{_e}</p></body></html>".encode()
 
 _DATA_DIR  = os.path.join(
     os.environ.get("XDG_DATA_HOME", os.path.expanduser("~/.local/share")), "flo"
@@ -32,6 +27,14 @@ WIN_W, WIN_H = 1100, 760
 PORT_PREF    = 5757
 
 
+def get_html(port):
+    """Inject the actual bound port so JS always hits the right address."""
+    return _APP_HTML.replace(
+        b"const API='http://127.0.0.1:5757'",
+        f"const API='http://127.0.0.1:{port}'".encode()
+    )
+
+
 class FloHandler(http.server.BaseHTTPRequestHandler):
     def log_message(self, fmt, *args): pass
 
@@ -41,10 +44,11 @@ class FloHandler(http.server.BaseHTTPRequestHandler):
     def do_GET(self):
         p = self.path.split("?")[0]
         if p in ("/", "/app.html"):
+            html = get_html(self.server.server_address[1])
             self.send_response(200); self._cors()
             self.send_header("Content-Type", "text/html; charset=utf-8")
-            self.send_header("Content-Length", len(_APP_HTML))
-            self.end_headers(); self.wfile.write(_APP_HTML)
+            self.send_header("Content-Length", len(html))
+            self.end_headers(); self.wfile.write(html)
         elif p == "/api/load":
             data = {}
             if os.path.exists(_DATA_PATH):
@@ -84,21 +88,36 @@ class FloHandler(http.server.BaseHTTPRequestHandler):
 
 
 def start_server():
+    """Bind synchronously. Returns (server, port, is_new)."""
     for port in [PORT_PREF] + list(range(5758, 5800)):
         try:
             srv = http.server.HTTPServer(("127.0.0.1", port), FloHandler)
-            threading.Thread(target=srv.serve_forever, daemon=True).start()
-            return port
-        except OSError: continue
+            return srv, port, True
+        except OSError:
+            if port == PORT_PREF:
+                return None, port, False
+            continue
     raise RuntimeError("No free port")
 
 
-def wait_for_server(port, timeout=10.0):
+def wait_for_http(port, timeout=10.0):
+    """Poll until real HTTP 200 — guarantees serve_forever is running."""
+    import socket
+    req = b"GET /app.html HTTP/1.0\r\nHost: 127.0.0.1\r\n\r\n"
     deadline = time.time() + timeout
     while time.time() < deadline:
         try:
-            with socket.create_connection(("127.0.0.1", port), timeout=0.2): return True
-        except OSError: time.sleep(0.05)
+            s = socket.socket()
+            s.settimeout(0.5)
+            s.connect(("127.0.0.1", port))
+            s.sendall(req)
+            resp = s.recv(64).decode("utf-8", errors="ignore")
+            s.close()
+            if "200" in resp:
+                return True
+        except Exception:
+            pass
+        time.sleep(0.05)
     return False
 
 
@@ -124,18 +143,37 @@ def launch_browser(url, browser_path):
 
 
 def main():
-    port = start_server()
-    wait_for_server(port)
+    srv, port, is_new = start_server()
+
+    if not is_new:
+        url = f"http://127.0.0.1:{port}/app.html"
+        browser = find_browser()
+        if browser:
+            launch_browser(url, browser).wait()
+        else:
+            webbrowser.open(url)
+        return
+
     url = f"http://127.0.0.1:{port}/app.html"
-    browser = find_browser()
-    if browser:
-        proc = launch_browser(url, browser)
-        proc.wait()
-    else:
-        webbrowser.open(url)
-        try:
-            while True: time.sleep(1)
-        except KeyboardInterrupt: pass
+
+    def open_browser():
+        wait_for_http(port)
+        browser = find_browser()
+        if browser:
+            proc = launch_browser(url, browser)
+            proc.wait()
+        else:
+            webbrowser.open(url)
+            return
+        srv.shutdown()
+        os._exit(0)
+
+    threading.Thread(target=open_browser, daemon=True).start()
+
+    try:
+        srv.serve_forever()
+    except KeyboardInterrupt:
+        pass
 
 
 if __name__ == "__main__":

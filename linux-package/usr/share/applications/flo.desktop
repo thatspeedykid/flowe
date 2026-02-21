@@ -1,0 +1,13 @@
+[Desktop Entry]
+Version=1.3
+Type=Application
+Name=flo
+GenericName=Budget App
+Comment=Simple budget app — monthly budgets, debt snowball, net worth
+Exec=/usr/bin/flo
+Icon=flo
+Terminal=false
+Categories=Finance;Office;
+Keywords=budget;finance;money;debt;
+StartupNotify=true
+StartupWMClass=flo
