@@ -199,8 +199,17 @@ def main():
             except Exception:
                 pass
         else:
-            print("No Chromium browser found. Install with: sudo apt install chromium-browser")
-            return
+            # Show visible error dialog using zenity or xmessage
+            msg = "flo needs Chromium to run.\nInstall it with:\n\n  sudo apt install chromium-browser"
+            try:
+                subprocess.Popen(["zenity", "--error", "--text", msg])
+            except Exception:
+                try:
+                    subprocess.Popen(["xmessage", msg])
+                except Exception:
+                    print(msg)
+            srv.shutdown()
+            os._exit(1)
         srv.shutdown()
         os._exit(0)
 
