@@ -1,0 +1,13 @@
+Package: flo
+Version: 1.3
+Section: finance
+Priority: optional
+Architecture: amd64
+Depends: chromium-browser | chromium | google-chrome-stable
+Maintainer: thatspeedykid <https://github.com/thatspeedykid/flo>
+Description: flo — simple budget app
+ A free, open source personal finance app.
+ Monthly budgets, debt snowball, net worth tracking,
+ event planning and split cost calculator.
+ 100% offline. No accounts, no cloud, no ads.
+Homepage: https://github.com/thatspeedykid/flo

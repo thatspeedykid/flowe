@@ -1,0 +1,8 @@
+Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: flo
+Upstream-Contact: https://github.com/thatspeedykid/flo
+Source: https://github.com/thatspeedykid/flo
+
+Files: *
+Copyright: 2026 thatspeedykid
+License: MIT

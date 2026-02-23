@@ -1,0 +1,16 @@
+<svg width="256" height="256" viewBox="0 0 256 256" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background circle -->
+  <circle cx="128" cy="128" r="120" fill="#0f0f0f" stroke="#c8f560" stroke-width="8"/>
+  
+  <!-- Main flow line (bright) -->
+  <path d="M40 155 C65 110, 95 135, 128 118 C161 101, 191 82, 216 105" 
+        stroke="#c8f560" stroke-width="14" stroke-linecap="round" fill="none"/>
+  
+  <!-- Secondary flow line (green, subtle) -->
+  <path d="M40 178 C65 133, 95 158, 128 141 C161 124, 191 105, 216 128" 
+        stroke="#60f5a0" stroke-width="9" stroke-linecap="round" fill="none" opacity="0.55"/>
+  
+  <!-- Dot at the peak — the "goal" -->
+  <circle cx="216" cy="105" r="14" fill="#c8f560"/>
+  <circle cx="216" cy="105" r="7" fill="#0f0f0f"/>
+</svg>

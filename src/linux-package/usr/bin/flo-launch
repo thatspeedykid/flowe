@@ -1,0 +1,3 @@
+#!/bin/bash
+export PATH="/snap/bin:/usr/bin:/usr/local/bin:/bin:/opt/google/chrome:$PATH"
+exec /usr/lib/flo/flo "$@" >> /tmp/flo.log 2>&1
