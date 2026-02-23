@@ -6,10 +6,10 @@ a = Analysis(
     pathex=['.'],
     binaries=[],
     datas=[('app.html', '.')],
-    hiddenimports=[],
+    hiddenimports=['webview', 'webview.platforms.gtk'],
     hookspath=[],
     runtime_hooks=[],
-    excludes=['pythonnet', 'webview', 'clr', 'tkinter'],
+    excludes=['tkinter'],
     cipher=block_cipher,
 )
 
