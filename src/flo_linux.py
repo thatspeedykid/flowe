@@ -1,10 +1,11 @@
 """
-flo - simple budget app
-Linux launcher. Serves app.html from memory. Pure stdlib.
+flo - simple budget app — Linux launcher
+Pure stdlib. Serves app.html, handles save/load.
 """
-import os, sys, time, threading, json, subprocess, webbrowser
-import http.server
+import os, sys, time, threading, json, subprocess, socket
+import http.server, socketserver
 
+# ── Locate bundled files ──────────────────────────────────────────────────────
 if getattr(sys, "frozen", False):
     _BASE = sys._MEIPASS
 else:
@@ -12,11 +13,12 @@ else:
 
 _HTML_PATH = os.path.join(_BASE, "app.html")
 try:
-    with open(_HTML_PATH, "rb") as _f:
-        _APP_HTML = _f.read()
-except Exception as _e:
-    _APP_HTML = f"<html><body><h2>flo could not start</h2><p>{_e}</p></body></html>".encode()
+    with open(_HTML_PATH, "rb") as f:
+        _APP_HTML = f.read()
+except Exception as e:
+    _APP_HTML = f"<html><body><h2>flo error</h2><p>{e}</p></body></html>".encode()
 
+# ── Data storage ──────────────────────────────────────────────────────────────
 _DATA_DIR  = os.path.join(
     os.environ.get("XDG_DATA_HOME", os.path.expanduser("~/.local/share")), "flo"
 )
@@ -26,43 +28,40 @@ _DATA_PATH = os.path.join(_DATA_DIR, "data.json")
 WIN_W, WIN_H = 1100, 760
 PORT_PREF    = 5757
 
-
-def get_html(port):
-    """Inject the actual bound port so JS always hits the right address."""
-    return _APP_HTML.replace(
-        b"const API='http://127.0.0.1:5757'",
-        f"const API='http://127.0.0.1:{port}'".encode()
-    )
-
-
+# ── HTTP Handler ──────────────────────────────────────────────────────────────
 class FloHandler(http.server.BaseHTTPRequestHandler):
     def log_message(self, fmt, *args): pass
 
     def do_OPTIONS(self):
-        self.send_response(200); self._cors(); self.end_headers()
+        self.send_response(200)
+        self._cors()
+        self.end_headers()
 
     def do_GET(self):
-        p = self.path.split("?")[0]
-        if p in ("/", "/app.html"):
-            html = get_html(self.server.server_address[1])
-            self.send_response(200); self._cors()
+        path = self.path.split("?")[0]
+        if path in ("/", "/app.html"):
+            self.send_response(200)
+            self._cors()
             self.send_header("Content-Type", "text/html; charset=utf-8")
-            self.send_header("Content-Length", len(html))
-            self.end_headers(); self.wfile.write(html)
-        elif p == "/api/load":
+            self.send_header("Content-Length", str(len(_APP_HTML)))
+            self.end_headers()
+            self.wfile.write(_APP_HTML)
+        elif path == "/api/load":
             data = {}
             if os.path.exists(_DATA_PATH):
                 try:
                     with open(_DATA_PATH, "r", encoding="utf-8") as f:
                         data = json.load(f)
-                except Exception: pass
+                except Exception:
+                    pass
             self._json(data)
         else:
-            self.send_response(404); self.end_headers()
+            self.send_response(404)
+            self.end_headers()
 
     def do_POST(self):
         length = int(self.headers.get("Content-Length", 0))
-        body   = self.rfile.read(length)
+        body = self.rfile.read(length)
         if self.path == "/api/save":
             try:
                 data = json.loads(body)
@@ -72,14 +71,17 @@ class FloHandler(http.server.BaseHTTPRequestHandler):
             except Exception as e:
                 self._json({"ok": False, "error": str(e)}, 500)
         else:
-            self.send_response(404); self.end_headers()
+            self.send_response(404)
+            self.end_headers()
 
     def _json(self, data, status=200):
         body = json.dumps(data).encode("utf-8")
-        self.send_response(status); self._cors()
+        self.send_response(status)
+        self._cors()
         self.send_header("Content-Type", "application/json")
-        self.send_header("Content-Length", len(body))
-        self.end_headers(); self.wfile.write(body)
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
 
     def _cors(self):
         self.send_header("Access-Control-Allow-Origin", "*")
@@ -87,138 +89,121 @@ class FloHandler(http.server.BaseHTTPRequestHandler):
         self.send_header("Access-Control-Allow-Headers", "Content-Type")
 
 
+# ── Threaded server so multiple requests don't block each other ───────────────
+class ThreadedServer(socketserver.ThreadingMixIn, http.server.HTTPServer):
+    daemon_threads = True
+
+
+# ── Start server ──────────────────────────────────────────────────────────────
 def start_server():
-    """Bind synchronously. Returns (server, port, is_new)."""
     for port in [PORT_PREF] + list(range(5758, 5800)):
         try:
-            srv = http.server.HTTPServer(("127.0.0.1", port), FloHandler)
-            return srv, port, True
+            srv = ThreadedServer(("127.0.0.1", port), FloHandler)
+            return srv, port
         except OSError:
-            if port == PORT_PREF:
-                return None, port, False
             continue
-    raise RuntimeError("No free port")
+    raise RuntimeError("No free port available")
 
 
-def wait_for_http(port, timeout=20.0):
-    """Poll until real HTTP 200 — guarantees serve_forever is running."""
-    import socket
-    req = b"GET /app.html HTTP/1.0\r\nHost: 127.0.0.1\r\n\r\n"
+def wait_for_server(port, timeout=15.0):
     deadline = time.time() + timeout
     while time.time() < deadline:
         try:
-            s = socket.socket()
-            s.settimeout(0.5)
-            s.connect(("127.0.0.1", port))
-            s.sendall(req)
-            resp = s.recv(64).decode("utf-8", errors="ignore")
+            s = socket.create_connection(("127.0.0.1", port), timeout=0.3)
             s.close()
-            if "200" in resp:
-                return True
-        except Exception:
-            pass
-        time.sleep(0.05)
+            return True
+        except OSError:
+            time.sleep(0.1)
     return False
 
 
+# ── Find browser ──────────────────────────────────────────────────────────────
 def find_browser():
-    """Returns (path, kind) — Chromium-based only for proper --app= mode."""
-    import shutil
+    # Ensure snap and standard paths are in PATH
+    for p in ["/snap/bin", "/usr/bin", "/usr/local/bin", "/bin"]:
+        if p not in os.environ.get("PATH", ""):
+            os.environ["PATH"] = p + ":" + os.environ.get("PATH", "")
 
-    # Expand PATH to include snap and other common locations
-    extra_paths = [
-        "/snap/bin", "/usr/bin", "/usr/local/bin",
-        "/bin", "/opt/google/chrome",
-    ]
-    env_path = os.environ.get("PATH", "")
-    for p in extra_paths:
-        if p not in env_path:
-            env_path = p + ":" + env_path
-    os.environ["PATH"] = env_path
-
-    # Check explicit known paths (covers snap, deb, flatpak installs)
-    explicit_paths = [
+    # Check explicit paths first
+    for path in [
         "/usr/bin/chromium-browser",
         "/usr/bin/chromium",
         "/snap/bin/chromium",
         "/usr/bin/google-chrome",
         "/usr/bin/google-chrome-stable",
         "/usr/bin/brave-browser",
-        "/usr/bin/microsoft-edge",
         "/opt/google/chrome/google-chrome",
-    ]
-    for path in explicit_paths:
+    ]:
         if os.path.isfile(path) and os.access(path, os.X_OK):
-            return path, "chromium"
+            return path
 
-    # Also search updated PATH
+    # PATH search fallback
+    import shutil
     for name in ["chromium-browser", "chromium", "google-chrome",
-                 "google-chrome-stable", "brave-browser", "microsoft-edge"]:
-        path = shutil.which(name)
-        if path: return path, "chromium"
+                 "google-chrome-stable", "brave-browser"]:
+        found = shutil.which(name)
+        if found:
+            return found
 
-    return None, None
+    return None
 
 
-def launch_browser(url, browser_path, kind="chromium"):
+# ── Launch browser ────────────────────────────────────────────────────────────
+def launch_browser(url, browser):
     profile = os.path.join(_DATA_DIR, "browser-profile")
     os.makedirs(profile, exist_ok=True)
-    cmd = [browser_path, f"--app={url}", f"--window-size={WIN_W},{WIN_H}",
-           f"--user-data-dir={profile}", "--no-first-run",
-           "--no-default-browser-check", "--disable-extensions",
-           "--disable-background-networking", "--disable-sync"]
     return subprocess.Popen(
-        cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
-        start_new_session=True
+        [browser,
+         f"--app={url}",
+         f"--window-size={WIN_W},{WIN_H}",
+         f"--user-data-dir={profile}",
+         "--no-first-run",
+         "--no-default-browser-check",
+         "--disable-extensions"],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        start_new_session=True,
     )
 
 
+# ── Main ──────────────────────────────────────────────────────────────────────
 def main():
-    srv, port, is_new = start_server()
-
-    if not is_new:
-        url = f"http://127.0.0.1:{port}/app.html"
-        browser, kind = find_browser()
-        if browser:
-            launch_browser(url, browser).wait()
-        else:
-            print("No Chromium browser found. Install Chromium: sudo apt install chromium-browser")
-        return
-
+    srv, port = start_server()
     url = f"http://127.0.0.1:{port}/app.html"
 
-    def open_browser():
-        wait_for_http(port)
-        browser, kind = find_browser()
-        if browser:
-            proc = launch_browser(url, browser)
-            proc.wait()
-            try:
-                import signal
-                os.killpg(os.getpgid(proc.pid), signal.SIGTERM)
-            except Exception:
-                pass
-        else:
-            # Show visible error dialog using zenity or xmessage
-            msg = "flo needs Chromium to run.\nInstall it with:\n\n  sudo apt install chromium-browser"
-            try:
-                subprocess.Popen(["zenity", "--error", "--text", msg])
-            except Exception:
-                try:
-                    subprocess.Popen(["xmessage", msg])
-                except Exception:
-                    print(msg)
-            srv.shutdown()
-            os._exit(1)
+    # Start server in background thread
+    t = threading.Thread(target=srv.serve_forever, daemon=True)
+    t.start()
+
+    # Wait for server to be ready
+    if not wait_for_server(port):
+        print("ERROR: server failed to start")
+        return
+
+    # Find and launch browser
+    browser = find_browser()
+    if not browser:
+        print("ERROR: No Chromium browser found.")
+        print("Install with: sudo apt install chromium-browser")
+        try:
+            subprocess.Popen(["zenity", "--error", "--no-wrap",
+                              "--text=flo needs Chromium.\n\nInstall: sudo apt install chromium-browser"])
+        except Exception:
+            pass
         srv.shutdown()
-        os._exit(0)
+        return
 
-    threading.Thread(target=open_browser, daemon=True).start()
+    proc = launch_browser(url, browser)
+    proc.wait()
 
+    # Clean up
     try:
-        srv.serve_forever()
-    except KeyboardInterrupt:
+        import signal
+        os.killpg(os.getpgid(proc.pid), signal.SIGTERM)
+    except Exception:
         pass
+
+    srv.shutdown()
 
 
 if __name__ == "__main__":
