@@ -1,78 +1,157 @@
-#!/usr/bin/env bash
-# flo — Build .deb Installer
-# Usage: bash build_deb.sh
+#!/bin/bash
+set -e
 
-cd "$(dirname "$0")"
-REPO_DIR="$(pwd)"
+APP="flo"
+VERSION="1.4.0"
+ARCH="amd64"
+DEB_DIR="/tmp/flo_deb"
 
-GREEN='\033[0;32m'; RED='\033[0;31m'; NC='\033[0m'
-VERSION="1.3"
-DEB_NAME="flo_${VERSION}_amd64.deb"
-
-echo ""
-echo "========================================"
-echo "  flo — Build .deb Installer"
-echo "========================================"
+echo "╔══════════════════════════════════════╗"
+echo "║  flo v$VERSION — Build & Install        ║"
+echo "╚══════════════════════════════════════╝"
 echo ""
 
-# ── Check flo binary exists ───────────────────────────────────────────────────
-if [ ! -f "$REPO_DIR/src/dist/flo" ]; then
-    echo -e "${RED}[ERROR]${NC} src/dist/flo not found."
-    echo "  Run: bash build_linux.sh first"
-    echo ""
+# ── 0. Check deps ─────────────────────────────────────────────────────────────
+for cmd in flutter dpkg-deb; do
+  if ! command -v "$cmd" &>/dev/null; then
+    echo "✗ Missing: $cmd"
+    [ "$cmd" = "flutter" ] && echo "  → https://docs.flutter.dev/get-started/install/linux"
     exit 1
-fi
-echo -e "${GREEN}[OK]${NC} flo binary found."
+  fi
+done
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+cd "$SCRIPT_DIR"
+
+# ── 1. Dependencies ───────────────────────────────────────────────────────────
+echo "→ Getting Flutter dependencies..."
+flutter pub get --suppress-analytics 2>/dev/null || flutter pub get
+
+# ── 2. Build release ──────────────────────────────────────────────────────────
+echo "→ Building release binary..."
+flutter build linux --release
+echo "✓ Flutter build done"
 echo ""
 
-# ── Check dpkg-deb ────────────────────────────────────────────────────────────
-if ! command -v dpkg-deb >/dev/null 2>&1; then
-    echo "Installing dpkg..."
-    sudo apt-get install -y dpkg
-fi
+# ── 3. Deb structure ──────────────────────────────────────────────────────────
+rm -rf "$DEB_DIR"
+mkdir -p "$DEB_DIR/DEBIAN"
+mkdir -p "$DEB_DIR/usr/bin"
+mkdir -p "$DEB_DIR/usr/lib/flo"
+mkdir -p "$DEB_DIR/usr/share/applications"
+mkdir -p "$DEB_DIR/usr/share/doc/flo"
+mkdir -p "$DEB_DIR/usr/share/icons/hicolor/16x16/apps"
+mkdir -p "$DEB_DIR/usr/share/icons/hicolor/32x32/apps"
+mkdir -p "$DEB_DIR/usr/share/icons/hicolor/48x48/apps"
+mkdir -p "$DEB_DIR/usr/share/icons/hicolor/64x64/apps"
+mkdir -p "$DEB_DIR/usr/share/icons/hicolor/128x128/apps"
+mkdir -p "$DEB_DIR/usr/share/icons/hicolor/256x256/apps"
+mkdir -p "$DEB_DIR/usr/share/icons/hicolor/512x512/apps"
 
-# ── Build entirely in Linux home dir (avoids /mnt/c chmod issues) ────────────
-PKG_TMP="$HOME/flo_deb_tmp"
-rm -rf "$PKG_TMP"
+# ── 4. Copy bundle ────────────────────────────────────────────────────────────
+cp -r build/linux/x64/release/bundle/* "$DEB_DIR/usr/lib/flo/"
 
-# Copy package structure to Linux filesystem
-cp -r "$REPO_DIR/linux-package" "$PKG_TMP"
+# ── 5. Launcher ───────────────────────────────────────────────────────────────
+cat > "$DEB_DIR/usr/bin/flo" << 'LAUNCHER'
+#!/bin/bash
+cd /usr/lib/flo
+exec ./flo "$@"
+LAUNCHER
+chmod +x "$DEB_DIR/usr/bin/flo"
 
-# Copy binary and set permissions (works on Linux fs)
-mkdir -p "$PKG_TMP/usr/lib/flo"
-cp "$REPO_DIR/src/dist/flo" "$PKG_TMP/usr/lib/flo/flo"
-chmod 755 "$PKG_TMP/usr/lib/flo/flo"
-chmod 755 "$PKG_TMP/usr/bin/flo-launch"
-chmod 755 "$PKG_TMP/DEBIAN/postinst"
-chmod 644 "$PKG_TMP/DEBIAN/control"
-find "$PKG_TMP/usr/share" -type f -exec chmod 644 {} \;
+# ── 6. Icons — all sizes ──────────────────────────────────────────────────────
+ASSET_DIR="$SCRIPT_DIR/assets"
+for size in 16 32 48 64 128 256 512; do
+  icon_file="$ASSET_DIR/icon_${size}.png"
+  # Fall back to icon.png (256px) if size-specific file missing
+  [ ! -f "$icon_file" ] && icon_file="$ASSET_DIR/icon.png"
+  if [ -f "$icon_file" ]; then
+    target_dir="$DEB_DIR/usr/share/icons/hicolor/${size}x${size}/apps"
+    mkdir -p "$target_dir"
+    cp "$icon_file" "$target_dir/flo.png"
+  fi
+done
+echo "✓ Icons installed"
 
-# Copy icon if available
-if [ -f "$REPO_DIR/github/flo_logo.svg" ]; then
-    cp "$REPO_DIR/github/flo_logo.svg" "$PKG_TMP/usr/share/icons/hicolor/256x256/apps/flo.svg"
-fi
+# ── 7. Desktop entry ──────────────────────────────────────────────────────────
+cat > "$DEB_DIR/usr/share/applications/flo.desktop" << 'DESKTOP'
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=flo
+GenericName=Personal Finance
+Comment=Take control of your money — budget, crush debt, track net worth
+Exec=/usr/bin/flo
+Icon=flo
+Categories=Office;Finance;
+Keywords=budget;finance;money;debt;snowball;savings;
+StartupNotify=true
+StartupWMClass=flo
+DESKTOP
 
-# ── Build .deb ────────────────────────────────────────────────────────────────
-echo -e "${GREEN}[1/1]${NC} Building .deb..."
-mkdir -p "$HOME/flo_installer_out"
-dpkg-deb --build "$PKG_TMP" "$HOME/flo_installer_out/${DEB_NAME}"
+# ── 8. Copyright / License ────────────────────────────────────────────────────
+cp "$SCRIPT_DIR/LICENSE" "$DEB_DIR/usr/share/doc/flo/copyright" 2>/dev/null || cat > "$DEB_DIR/usr/share/doc/flo/copyright" << 'COPYRIGHT'
+MIT License — Copyright (c) 2026 speeddevilx
+Full license: https://github.com/thatspeedykid/flo/blob/main/LICENSE
+COPYRIGHT
 
-if [ ! -f "$HOME/flo_installer_out/${DEB_NAME}" ]; then
-    echo -e "${RED}[ERROR]${NC} Package not created."
-    exit 1
-fi
+# ── 9. Control file ───────────────────────────────────────────────────────────
+INSTALLED_SIZE=$(du -sk "$DEB_DIR/usr" | cut -f1)
+cat > "$DEB_DIR/DEBIAN/control" << CONTROL
+Package: flo
+Version: $VERSION
+Section: utils
+Priority: optional
+Architecture: $ARCH
+Installed-Size: $INSTALLED_SIZE
+Maintainer: speeddevilx <https://github.com/thatspeedykid/flo>
+Description: flo - personal finance tracker
+ Take control of your money with flo. Track your monthly budget,
+ crush debt with the snowball method, monitor net worth over time,
+ and plan events — all in one fast, offline app.
+ .
+ Features: budget with 6-month chart, debt snowball payoff timeline,
+ net worth snapshots, event split calculator, dark/light mode,
+ CSV export, and full backup/restore compatible with all flo versions.
+Homepage: https://github.com/thatspeedykid/flo
+License: MIT
+CONTROL
 
-# Copy .deb back to repo
-mkdir -p "$REPO_DIR/installer"
-cp "$HOME/flo_installer_out/${DEB_NAME}" "$REPO_DIR/installer/${DEB_NAME}"
-rm -rf "$PKG_TMP" "$HOME/flo_installer_out"
+# ── 10. Maintainer scripts ────────────────────────────────────────────────────
+cat > "$DEB_DIR/DEBIAN/preinst" << 'PREINST'
+#!/bin/bash
+# Remove stale files from older installs
+rm -f /usr/share/applications/flo.desktop
+rm -f /usr/bin/flo-launch
+update-desktop-database /usr/share/applications 2>/dev/null || true
+PREINST
+chmod 755 "$DEB_DIR/DEBIAN/preinst"
 
-SIZE=$(du -sh "$REPO_DIR/installer/${DEB_NAME}" | cut -f1)
+cat > "$DEB_DIR/DEBIAN/postinst" << 'POSTINST'
+#!/bin/bash
+update-desktop-database /usr/share/applications 2>/dev/null || true
+gtk-update-icon-cache -f -t /usr/share/icons/hicolor 2>/dev/null || true
+POSTINST
+chmod 755 "$DEB_DIR/DEBIAN/postinst"
+
+cat > "$DEB_DIR/DEBIAN/prerm" << 'PRERM'
+#!/bin/bash
+true
+PRERM
+chmod 755 "$DEB_DIR/DEBIAN/prerm"
+
+# ── 11. Build deb ─────────────────────────────────────────────────────────────
+DEB_FILE="${APP}_${VERSION}_${ARCH}.deb"
+dpkg-deb --build "$DEB_DIR" "$DEB_FILE"
+echo "✓ Built: $DEB_FILE ($(du -sh "$DEB_FILE" | cut -f1))"
 echo ""
-echo "========================================"
-echo -e "  ${GREEN}DONE${NC} — installer/${DEB_NAME} ($SIZE)"
-echo "========================================"
+
+# ── 12. Install ───────────────────────────────────────────────────────────────
+echo "→ Installing (sudo required)..."
+sudo apt install -y "./$DEB_FILE"
 echo ""
-echo "  Install:   sudo dpkg -i installer/${DEB_NAME}"
-echo "  Uninstall: sudo apt remove flo"
-echo ""
+echo "╔══════════════════════════════════════╗"
+echo "║  ✓ flo v$VERSION installed!             ║"
+echo "║  Launch: flo  or from app menu       ║"
+echo "║  Uninstall: sudo apt remove flo      ║"
+echo "╚══════════════════════════════════════╝"

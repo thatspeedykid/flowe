@@ -4,19 +4,23 @@
 
 # flo
 
-**Simple budget app and tracking.**
+**Take control of your money.**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg?style=flat-square)](LICENSE)
 [![Open Source](https://img.shields.io/badge/open%20source-yes-brightgreen?style=flat-square)](#)
-[![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux-blue?style=flat-square)](#getting-started)
-[![Python](https://img.shields.io/badge/python-3.8%2B-yellow?style=flat-square)](https://python.org)
+[![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20Windows%20%7C%20Android%20%7C%20iOS-blue?style=flat-square)](#getting-started)
+[![Flutter](https://img.shields.io/badge/Flutter-3.x-54C5F8?style=flat-square&logo=flutter)](https://flutter.dev)
+[![Version](https://img.shields.io/badge/version-1.4.0-c8f560?style=flat-square)](#changelog)
 [![Buy me a coffee](https://img.shields.io/badge/PayPal-Buy%20me%20a%20coffee-7aaa40?style=flat-square&logo=paypal)](https://www.paypal.com/paypalme/speeddevilx)
 
-*Monthly budgets · Debt snowball · Net worth · Event planning · Split costs — 100% offline, 100% open source.*
+*Monthly budgets · Debt snowball · Net worth · Event planning · Split costs*  
+*100% offline · 100% open source · No accounts · No cloud · No ads*
 
-**Current version: v1.3**
+**Current version: v1.4.0 — Flutter Edition**
 
 </div>
+
+---
 
 ## Screenshots
 
@@ -32,139 +36,117 @@
 
 ## What is flo?
 
-**flo** is a free, open source personal finance app built for people who want real control over their money without handing it to a subscription service.
+**flo** is a free, open source personal finance app for people who want real control over their money — without handing it to a subscription service.
 
-No accounts. No cloud. No ads. No paywalls. Your data is a plain file sitting on your own machine — you own it completely.
+No accounts. No cloud. No ads. No paywalls. Your data lives in a plain file on your own machine. You own it completely.
 
-It runs as a native-feeling desktop window using Edge or Chrome's app mode, so there's no address bar, no browser tabs, just the app. Under the hood it's a lightweight Python server and a single HTML file — the entire codebase is small enough to read in an afternoon. Fork it, modify it, make it yours.
+As of v1.4, flo is built with **Flutter** — a single codebase that runs natively on Linux, Windows, Android, and iOS. It's fast, offline-first, and small enough to understand in an afternoon.
 
-Whether you're trying to get out of debt, track your net worth over time, or plan a big event without blowing your budget, flo gives you the tools without the bloat.
-
----
+Whether you're getting out of debt, tracking your net worth, or planning a wedding budget, flo gives you the tools without the bloat.
 
 ---
 
 ## Features
 
-**Monthly Budget**
-- Fully customizable income and expense sections
+### 💰 Monthly Budget
+- Fully customizable income and expense sections — add, rename, delete, reorder
+- Tag rows by type: 💳 debt / 🏦 savings / 💰 income / 📦 other (tap to cycle)
 - 6-month income vs expenses bar chart
-- Carry over last month as a starting point
-- Export to CSV and copy to clipboard
-- Auto-saves 2.5 seconds after any change
+- Carry over previous month in one tap
+- Export to CSV or copy to clipboard
+- Swipe sections or rows left to delete
 
-**Debt Snowball**
-- Track credit cards, loans, and any other debt
-- Minimum payments auto-sync from your budget tab by name matching
-- Full snowball payoff simulation with months-to-freedom
-- Due date alerts — orange within 7 days, red within 3
-- Progress bars showing how much of each debt is paid off
-- 15% suggestion card splits leftover income across debts
+### ❄️ Debt Snowball
+- Track credit cards, loans, medical debt, anything
+- Import debts directly from budget rows tagged as 💳 debt
+- Minimum payments auto-sync from budget by name matching
+- Full snowball payoff simulation — months to freedom, payoff dates
+- Due date alerts — 🟠 within 7 days, 🔴 within 3
+- Progress bars showing original vs remaining balance
+- 15% suggestion card — auto-calculates extra payment from leftover income
+- Filter by type: 💳 card / 🏦 loan / 🏥 medical / 📦 other
 
-**Net Worth**
-- Track assets: checking, savings, investments, anything
-- Liabilities auto-pull from your debt balances — no double entry
-- Save dated snapshots and see +/- delta between each one
+### 📈 Net Worth
+- Track assets: checking, savings, investments, property, anything
+- Liabilities auto-linked from snowball debt total — no double entry
+- Save dated snapshots with +/- delta vs previous snapshot
+- Swipe to delete assets, liabilities, or snapshots
 
-**Event Budgets**
+### 🎉 Event Budgets
 - Plan vacations, weddings, holidays, any one-time event
 - Budget cap with real-time progress bar
-- Mark individual items as paid
-- Split cost calculator — add people, set custom amounts per person, see total collected vs target
+- Mark items paid (strikethrough) with paid/unpaid/total stats
+- Full split calculator — add people, set amounts, see collected vs target
+- Sync total directly from budget
 
-**Other**
-- Dark and light theme via ⚙️ settings gear — saved across sessions
-- Keyboard friendly
-- Works on 768px+ screens
+### ⚙️ App
+- Dark and light theme
+- Import/export backup compatible with all flo versions (including v1.0–v1.3 Windows/Linux)
+- Check for update button
+- Bottom-bar coffee link ☕
+- Swipe to delete on every list in every tab
+- Natural touch/trackpad scroll everywhere
 
 ---
 
 ## Getting Started
 
+### Linux
+
+**Install from .deb (recommended)**
+
+```bash
+git clone https://github.com/thatspeedykid/flo
+cd flo
+bash build_deb.sh
+# builds and installs flo_1.4.0_amd64.deb automatically
+```
+
+Then launch from your app menu or run `flo` in a terminal.
+
+**Requirements:** Flutter 3.x, dpkg-deb (comes with dpkg)
+
+**Upgrade from v1.0–v1.3:**  
+Just run `build_deb.sh` — your existing data migrates automatically. The new app reads both the old HTML/Python format and the new Flutter format.
+
+---
+
+### Windows
+
+> ⚠️ Windows build coming in v1.4.1 — tracking in [issues](https://github.com/thatspeedykid/flo/issues)
+
+```bash
+# On Windows with Flutter installed:
+flutter build windows --release
+# Installer script: build_windows.bat (coming soon)
+```
+
+---
+
 ### Run from source (any platform)
 
 ```bash
 git clone https://github.com/thatspeedykid/flo
-cd flo/src
-python server.py
+cd flo
+flutter pub get
+flutter run
 ```
-
-Then open `http://127.0.0.1:5757/app.html` in your browser.
-
-No dependencies. Pure Python stdlib. Works on Python 3.8+.
 
 ---
 
-### Build a standalone executable
+## Data & Backup
 
-**Windows**
-
-**Step 1 — Install Python** (if you don't have it)
-
-1. Go to [python.org/downloads](https://www.python.org/downloads/)
-2. Download **Python 3.12** (not 3.13+)
-3. Run the installer — **check "Add Python to PATH"** at the bottom before clicking Install
-
-> ⚠️ Make sure "Add Python to PATH" is checked or the build will fail.
-
-**Step 2 — Build flo**
-
-Just double-click `build_windows.bat`. It installs PyInstaller automatically and produces `src/dist/flo.exe`.
-
-Double-click `flo.exe` to run. Opens in Edge app-mode — no browser UI, no address bar.
-
-**Linux**
-
-> ⚠️ **Requires Chromium or Google Chrome** — flo uses app-mode for a native window feel (no address bar, no browser UI). Firefox is not supported.
->
-> Install Chromium first:
-> ```bash
-> sudo apt install chromium-browser
-> ```
-
-**Step 1 — Install Chromium** (if not already installed)
-```bash
-sudo apt install chromium-browser
-```
-
-**Step 2 — Build flo**
-```bash
-bash build_linux.sh   # builds src/dist/flo
-bash build_deb.sh     # builds installer/flo_1.3_amd64.deb
-```
-
-**Step 3 — Install**
-```bash
-sudo dpkg -i installer/flo_1.3_amd64.deb
-```
-
-Then launch from your app launcher or type `flo` in a terminal.
-
-> 💡 **End users** downloading `flo_1.3_amd64.deb` also need Chromium installed:
-> ```bash
-> sudo apt install chromium-browser
-> sudo dpkg -i flo_1.3_amd64.deb
-> ```
-
----
-
-## How it works
-
-| Layer | Details |
-|---|---|
-| Frontend | Single HTML file — no framework, no build step |
-| Backend | Python `http.server` (stdlib only) |
-| Window | Edge or Chrome launched in `--app=` mode |
-| Data | Plain JSON file in your user data folder |
-
-**Data locations:**
+Data is stored locally — never in the cloud.
 
 | Platform | Path |
 |---|---|
-| Windows | `%APPDATA%\flo\data.json` |
-| Linux | `~/.local/share/flo/data.json` |
+| Linux | `~/.local/share/flo/flo/data.json` |
+| Windows | `%APPDATA%\Roaming\flo\flo\data.json` |
+| Android | App private storage |
 
-Data is never stored inside the app folder. Upgrading just means replacing the exe — your data is untouched.
+**Backup/restore:** Settings → Export Backup saves `~/flo_backup.json`.  
+Settings → Import Backup reads `~/flo_backup.json` or `~/.local/share/flo/data.json`.  
+Compatible with all versions of flo including the original Python/HTML builds.
 
 ---
 
@@ -172,20 +154,20 @@ Data is never stored inside the app folder. Upgrading just means replacing the e
 
 ```
 flo/
-├── src/
-│   ├── app.html            <- entire frontend (HTML + CSS + JS)
-│   ├── server.py           <- Python HTTP server + data storage
-│   ├── flo_win.py          <- Windows launcher
-│   ├── flo_linux.py        <- Linux launcher
-│   ├── flo_win.spec        <- PyInstaller Windows spec
-│   ├── flo_linux.spec      <- PyInstaller Linux spec
-│   └── generate_icon.py    <- Generates flo.ico before build
-├── github/
-│   └── screenshots/
-├── build_windows.bat
-├── build_linux.sh
-├── .gitignore
-├── LICENSE
+├── lib/
+│   ├── main.dart                 ← app shell, navigation, settings
+│   ├── models/data.dart          ← all data models + storage
+│   └── screens/
+│       ├── budget_screen.dart    ← budget tab
+│       ├── snowball_screen.dart  ← debt snowball tab
+│       ├── networth_screen.dart  ← net worth tab
+│       └── events_screen.dart   ← events tab
+├── assets/
+│   ├── icon.png                  ← 256px app icon
+│   └── icon_512.png              ← 512px app icon
+├── build_deb.sh                  ← Linux .deb builder + auto-installer
+├── build_windows.bat             ← Windows installer builder (coming soon)
+├── LICENSE                       ← MIT
 └── README.md
 ```
 
@@ -193,35 +175,7 @@ flo/
 
 ## Changelog
 
-### v1.3 — February 2026
-- **Click-and-drag scrolling** — click and drag anywhere to scroll, with momentum/inertia like a phone
-- **Touch-friendly** — native touch scrolling enabled throughout
-- **No text selection** — clicking and dragging no longer highlights text, feels like a native app
-- **Right-click to paste** — context menu disabled everywhere except input fields where paste still works
-- **Settings gear fixed** — always pinned to the far right of the save bar
-- **Check for update** — settings panel stays open while checking, shows download link if update available
-- **Server shuts down on close** — flo process now exits cleanly when the window closes (no more ghost processes in Task Manager)
-- **Proper installer** — `flo_setup.exe` via Inno Setup, user-scoped install with no UAC prompts, supports upgrades
-- **Responsive layout** — all sections now fill the full window width at any resolution
-
-### v1.2 — February 2026
-- **Single-click launch fixed** — app now opens reliably on first click every time. Previously required double-clicking after a fresh install
-- **Split cost calculator redesigned** — now fully independent from the event budget total. Enter any amount, assign custom amounts per person, see total collected vs target
-- **Settings gear** — dark/light mode toggle moved behind a ⚙️ gear button in the save bar, keeping the UI cleaner
-- **Light mode color scheme** — completely reworked with warm tones and proper contrast for all UI elements
-- **Status bar & theme toggle** — both now live inside the tab bar so they never hide behind the menu when scrolling
-
-### v1.1 — January 2026
-- Larger fonts and UI elements throughout
-- Flo logo and "Buy me a coffee" button added to header
-- Open source branding
-- Linux build support
-
-### v1.0 — Initial release
-- Monthly budget with CSV export and carry-over
-- Debt snowball tracker with auto-sync from budget
-- Net worth tracker with snapshots
-- Event budget planner with split cost calculator
+See [CHANGELOG.md](CHANGELOG.md) for full history.
 
 ---
 
@@ -233,4 +187,4 @@ flo/
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+MIT — see [LICENSE](LICENSE). Free to use, modify, and distribute.
