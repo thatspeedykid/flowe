@@ -290,7 +290,7 @@ class _SnowballScreenState extends State<SnowballScreen> {
           decoration: BoxDecoration(color: surface, border: Border.all(color: border),
             borderRadius: BorderRadius.circular(12)),
           child: Row(children: [
-            Text('Extra monthly payment', style: GoogleFonts.dmMono(color: muted, fontSize: 12)),
+            Text('Extra monthly payment', style: GoogleFonts.dmMono(color: muted, fontSize: 13)),
             const Spacer(),
             SizedBox(
               width: 120,
@@ -319,7 +319,7 @@ class _SnowballScreenState extends State<SnowballScreen> {
           onPressed: () => _save([...debts,
             Debt(name: 'New Debt', balance: 0, minPayment: 0, apr: 0, type: 'card')], extra),
           icon: Icon(Icons.add, color: muted, size: 16),
-          label: Text('Add Debt', style: GoogleFonts.dmMono(color: muted, fontSize: 13)),
+          label: Text('Add Debt', style: GoogleFonts.dmMono(color: muted, fontSize: 15)),
           style: OutlinedButton.styleFrom(side: BorderSide(color: border)),
         ),
         const SizedBox(height: 16),
@@ -401,6 +401,23 @@ class _SnowballScreenState extends State<SnowballScreen> {
       direction: DismissDirection.endToStart,
       background: Container(alignment: Alignment.centerRight, padding: const EdgeInsets.only(right: 16),
         color: accent2.withOpacity(0.15), child: Icon(Icons.delete, color: accent2, size: 18)),
+      confirmDismiss: (_) async {
+        return await showDialog<bool>(
+          context: context,
+          builder: (c) => AlertDialog(
+            backgroundColor: surface,
+            title: Text('Delete debt?', style: GoogleFonts.dmMono(color: txt)),
+            content: Text('Delete "${debt.name}"? This cannot be undone.',
+              style: GoogleFonts.dmMono(color: muted, fontSize: 13)),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(c, false),
+                child: Text('Cancel', style: GoogleFonts.dmMono(color: muted))),
+              TextButton(onPressed: () => Navigator.pop(c, true),
+                child: Text('Delete', style: GoogleFonts.dmMono(color: accent2))),
+            ],
+          ),
+        ) ?? false;
+      },
       onDismissed: (_) { final d = [...debts]..removeAt(idx); _save(d, extra); },
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
@@ -444,23 +461,53 @@ class _SnowballScreenState extends State<SnowballScreen> {
             const SizedBox(width: 8),
             _field('Min Pay',  debt.minPayment, '\$', (v) { debt.minPayment = v; _save(debts, extra); }),
             const SizedBox(width: 8),
-            _field('APR',      debt.apr,        '',  (v) { debt.apr = v; _save(debts, extra); }, suffix: '%'),
+            _field('APR %',    debt.apr,        '',  (v) { debt.apr = v; _save(debts, extra); }),
           ]),
           const SizedBox(height: 8),
-          // Due date
+          // Due date with calendar picker
           Row(children: [
             Text('Due date: ', style: GoogleFonts.dmMono(color: muted, fontSize: 11)),
-            SizedBox(
-              width: 120,
-              child: TextFormField(
-                key: ValueKey('dd_$idx'),
-                initialValue: debt.dueDate,
-                style: GoogleFonts.dmMono(color: muted, fontSize: 11),
-                decoration: InputDecoration(hintText: 'YYYY-MM-DD',
-                  hintStyle: GoogleFonts.dmMono(color: muted.withOpacity(0.5), fontSize: 11),
-                  border: InputBorder.none, isDense: true),
-                onChanged: (v) { debt.dueDate = v; _save(debts, extra); },
-              )),
+            Text(
+              debt.dueDate != null && debt.dueDate!.isNotEmpty ? debt.dueDate! : 'Not set',
+              style: GoogleFonts.dmMono(color: muted, fontSize: 11)),
+            const SizedBox(width: 8),
+            GestureDetector(
+              onTap: () async {
+                DateTime initial = DateTime.now();
+                try { if (debt.dueDate != null && debt.dueDate!.isNotEmpty) initial = DateTime.parse(debt.dueDate!); } catch(_) {}
+                final picked = await showDatePicker(
+                  context: context,
+                  initialDate: initial,
+                  firstDate: DateTime(2020),
+                  lastDate: DateTime(2040),
+                  builder: (ctx, child) => Theme(
+                    data: Theme.of(ctx).copyWith(
+                      colorScheme: ColorScheme.dark(
+                        primary: const Color(0xFFc8f560),
+                        onPrimary: const Color(0xFF0f0f0f),
+                        surface: const Color(0xFF1a1a1a),
+                        onSurface: const Color(0xFFe8e8e8))),
+                    child: child!));
+                if (picked != null) {
+                  debt.dueDate = picked.toIso8601String().split('T')[0];
+                  _save(debts, extra);
+                }
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  border: Border.all(color: border), borderRadius: BorderRadius.circular(4)),
+                child: Row(mainAxisSize: MainAxisSize.min, children: [
+                  Icon(Icons.calendar_today, size: 11, color: muted),
+                  const SizedBox(width: 4),
+                  Text('Pick', style: GoogleFonts.dmMono(color: muted, fontSize: 10)),
+                ]))),
+            if (debt.dueDate != null && debt.dueDate!.isNotEmpty) ...[
+              const SizedBox(width: 4),
+              GestureDetector(
+                onTap: () { debt.dueDate = ''; _save(debts, extra); },
+                child: Icon(Icons.close, size: 12, color: muted)),
+            ],
           ]),
           const SizedBox(height: 6),
           ClipRRect(borderRadius: BorderRadius.circular(4),
@@ -484,11 +531,11 @@ class _SnowballScreenState extends State<SnowballScreen> {
       TextFormField(
         key: ValueKey('f_${label}_$val'),
         initialValue: val == 0 ? '' : val.toStringAsFixed(2),
-        style: GoogleFonts.dmMono(color: txt, fontSize: 13),
-        decoration: InputDecoration(hintText: '0', hintStyle: GoogleFonts.dmMono(color: muted, fontSize: 13),
+        style: GoogleFonts.dmMono(color: txt, fontSize: 15),
+        decoration: InputDecoration(hintText: '0', hintStyle: GoogleFonts.dmMono(color: muted, fontSize: 15),
           border: InputBorder.none, isDense: true,
-          prefixText: prefix, prefixStyle: GoogleFonts.dmMono(color: muted, fontSize: 13),
-          suffixText: suffix, suffixStyle: GoogleFonts.dmMono(color: muted, fontSize: 13)),
+          prefixText: prefix, prefixStyle: GoogleFonts.dmMono(color: muted, fontSize: 15),
+          suffixText: suffix, suffixStyle: GoogleFonts.dmMono(color: muted, fontSize: 15)),
         keyboardType: const TextInputType.numberWithOptions(decimal: true),
         onChanged: (v) => onChanged(double.tryParse(v) ?? 0),
       ),

@@ -156,16 +156,20 @@ class Event {
   String name;
   double cap;
   List<EventCategory> categories;
-  Event({required this.name, required this.cap, required this.categories});
+  List<Map<String, dynamic>> splitPeople; // persisted split calculator people
+  Event({required this.name, required this.cap, required this.categories, List<Map<String,dynamic>>? splitPeople})
+    : splitPeople = splitPeople ?? [];
   double get total => categories.fold(0.0, (s, c) => s + c.total);
   Map<String, dynamic> toJson() => {
     'name': name, 'cap': cap,
     'categories': categories.map((c) => c.toJson()).toList(),
+    'splitPeople': splitPeople,
   };
   factory Event.fromJson(Map<String, dynamic> j) => Event(
     name: j['name'] ?? '',
     cap: (j['cap'] ?? 0).toDouble(),
     categories: (j['categories'] as List? ?? []).map((c) => EventCategory.fromJson(c)).toList(),
+    splitPeople: (j['splitPeople'] as List? ?? []).map((p) => Map<String,dynamic>.from(p)).toList(),
   );
 }
 

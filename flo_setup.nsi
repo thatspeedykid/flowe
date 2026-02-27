@@ -2,7 +2,7 @@
 ; Requires NSIS 3.x — https://nsis.sourceforge.io
 
 !define APP_NAME        "flo"
-!define APP_VERSION     "1.4.0"
+!define APP_VERSION     "1.4.1"
 !define APP_PUBLISHER   "speeddevilx"
 !define APP_URL         "https://github.com/thatspeedykid/flo"
 !define APP_EXE         "flo.exe"

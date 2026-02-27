@@ -44,6 +44,22 @@ class _BudgetScreenState extends State<BudgetScreen> {
     Future.delayed(const Duration(seconds: 2), () { if (mounted) setState(() => _toast = null); });
   }
 
+  Future<bool> _confirm(BuildContext ctx, String msg) async =>
+    await showDialog<bool>(
+      context: ctx,
+      builder: (c) => AlertDialog(
+        backgroundColor: surface,
+        title: Text('Are you sure?', style: GoogleFonts.dmMono(color: txt)),
+        content: Text(msg, style: GoogleFonts.dmMono(color: muted, fontSize: 13)),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(c, false),
+            child: Text('Cancel', style: GoogleFonts.dmMono(color: muted))),
+          TextButton(onPressed: () => Navigator.pop(c, true),
+            child: Text('Delete', style: GoogleFonts.dmMono(color: accent2))),
+        ],
+      ),
+    ) ?? false;
+
   void _carryOver() {
     final prev = DateTime(_month.year, _month.month - 1);
     final prevKey = '${prev.year}-${prev.month.toString().padLeft(2,'0')}';
@@ -266,7 +282,7 @@ class _BudgetScreenState extends State<BudgetScreen> {
     child: Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(border: Border.all(color: border), borderRadius: BorderRadius.circular(6)),
-      child: Text(label, style: GoogleFonts.dmMono(color: muted, fontSize: 12))));
+      child: Text(label, style: GoogleFonts.dmMono(color: muted, fontSize: 13))));
 
   Widget _sum(String label, double amount, Color color) => Column(children: [
     Text(label, style: GoogleFonts.dmMono(color: muted, fontSize: 10, letterSpacing: 1.5)),
@@ -281,7 +297,7 @@ class _BudgetScreenState extends State<BudgetScreen> {
       else b.expense.add(BudgetSection(name: 'NEW SECTION', rows: []));
       _save(b);
     },
-    child: Text(label, style: GoogleFonts.dmMono(color: muted, fontSize: 13)));
+    child: Text(label, style: GoogleFonts.dmMono(color: muted, fontSize: 15)));
 
   // ── Section card with swipe-to-delete ────────────────────────────────────
   Widget _secCard(BudgetSection sec, int secIdx, bool isIncome, MonthBudget b) {
@@ -297,9 +313,12 @@ class _BudgetScreenState extends State<BudgetScreen> {
           borderRadius: BorderRadius.circular(12)),
         child: Icon(Icons.delete, color: accent2, size: 22)),
       confirmDismiss: (_) async {
-        if (isIncome) b.income.removeAt(secIdx);
-        else b.expense.removeAt(secIdx);
-        _save(b);
+        final ok = await _confirm(context, 'Delete section "${sec.name}"?');
+        if (ok) {
+          if (isIncome) b.income.removeAt(secIdx);
+          else b.expense.removeAt(secIdx);
+          _save(b);
+        }
         return false;
       },
       child: Container(
@@ -317,12 +336,12 @@ class _BudgetScreenState extends State<BudgetScreen> {
                 child: TextFormField(
                   key: ValueKey('sn_${isIncome}_$secIdx'),
                   initialValue: sec.name,
-                  style: GoogleFonts.dmMono(color: accent, fontSize: 12, letterSpacing: 2),
+                  style: GoogleFonts.dmMono(color: accent, fontSize: 13, letterSpacing: 2),
                   decoration: const InputDecoration(border: InputBorder.none, isDense: true),
                   onChanged: (v) { sec.name = v; _save(b); },
                 )),
               Text('\$${sec.total.toStringAsFixed(2)}',
-                style: GoogleFonts.dmMono(color: muted, fontSize: 12)),
+                style: GoogleFonts.dmMono(color: muted, fontSize: 13)),
             ]),
           ),
           // Column headers
@@ -343,7 +362,7 @@ class _BudgetScreenState extends State<BudgetScreen> {
           ...sec.rows.asMap().entries.map((e) => _rowTile(e.value, e.key, sec, b)),
           TextButton(
             onPressed: () { sec.rows.add(BudgetRow(label: '', amount: 0)); _save(b); },
-            child: Text('+ Row', style: GoogleFonts.dmMono(color: muted, fontSize: 12))),
+            child: Text('+ Row', style: GoogleFonts.dmMono(color: muted, fontSize: 13))),
           // Footer
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -352,7 +371,7 @@ class _BudgetScreenState extends State<BudgetScreen> {
             child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
               Text('TOTAL', style: GoogleFonts.dmMono(color: muted, fontSize: 10, letterSpacing: 1.5)),
               Text('\$${sec.total.toStringAsFixed(2)}',
-                style: GoogleFonts.dmMono(color: txt, fontSize: 13, fontWeight: FontWeight.w500)),
+                style: GoogleFonts.dmMono(color: txt, fontSize: 15, fontWeight: FontWeight.w500)),
             ])),
         ]),
       ),
@@ -373,6 +392,7 @@ class _BudgetScreenState extends State<BudgetScreen> {
         alignment: Alignment.centerRight, padding: const EdgeInsets.only(right: 16),
         color: accent2.withOpacity(0.15),
         child: Icon(Icons.delete, color: accent2, size: 18)),
+      confirmDismiss: (_) async => await _confirm(context, 'Delete row "${row.label.isEmpty ? 'this row' : row.label}"?'),
       onDismissed: (_) { sec.rows.removeAt(rowIdx); _save(b); },
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 3),
@@ -382,9 +402,9 @@ class _BudgetScreenState extends State<BudgetScreen> {
             child: TextFormField(
               key: ValueKey('rl_${sec.name}_$rowIdx'),
               initialValue: row.label,
-              style: GoogleFonts.dmMono(color: txt, fontSize: 13),
+              style: GoogleFonts.dmMono(color: txt, fontSize: 15),
               decoration: InputDecoration(hintText: 'Label',
-                hintStyle: GoogleFonts.dmMono(color: muted, fontSize: 13),
+                hintStyle: GoogleFonts.dmMono(color: muted, fontSize: 15),
                 border: InputBorder.none, isDense: true),
               onChanged: (v) { row.label = v; _save(b); },
             )),
@@ -411,18 +431,18 @@ class _BudgetScreenState extends State<BudgetScreen> {
             child: TextFormField(
               key: ValueKey('ra_${sec.name}_$rowIdx'),
               initialValue: row.amount == 0 ? '' : row.amount.toStringAsFixed(2),
-              style: GoogleFonts.dmMono(color: txt, fontSize: 13),
+              style: GoogleFonts.dmMono(color: txt, fontSize: 15),
               decoration: InputDecoration(hintText: '0.00',
-                hintStyle: GoogleFonts.dmMono(color: muted, fontSize: 13),
+                hintStyle: GoogleFonts.dmMono(color: muted, fontSize: 15),
                 border: InputBorder.none, isDense: true,
-                prefixText: '\$', prefixStyle: GoogleFonts.dmMono(color: muted, fontSize: 13)),
+                prefixText: '\$', prefixStyle: GoogleFonts.dmMono(color: muted, fontSize: 15)),
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
               textAlign: TextAlign.right,
               onChanged: (v) { row.amount = double.tryParse(v) ?? 0; _save(b); },
             )),
           // Delete
           GestureDetector(
-            onTap: () { sec.rows.removeAt(rowIdx); _save(b); },
+            onTap: () async { if (await _confirm(context, 'Delete row?')) { sec.rows.removeAt(rowIdx); _save(b); } },
             child: Padding(padding: const EdgeInsets.only(left: 6),
               child: Icon(Icons.close, color: muted, size: 15))),
         ]),

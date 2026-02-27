@@ -40,6 +40,22 @@ class _NetWorthScreenState extends State<NetWorthScreen> {
     widget.onChanged(u);
   }
 
+  Future<bool> _confirm(BuildContext ctx, String msg) async =>
+    await showDialog<bool>(
+      context: ctx,
+      builder: (c) => AlertDialog(
+        backgroundColor: surface,
+        title: Text('Are you sure?', style: GoogleFonts.dmMono(color: txt)),
+        content: Text(msg, style: GoogleFonts.dmMono(color: muted, fontSize: 13)),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(c, false),
+            child: Text('Cancel', style: GoogleFonts.dmMono(color: muted))),
+          TextButton(onPressed: () => Navigator.pop(c, true),
+            child: Text('Delete', style: GoogleFonts.dmMono(color: accent2))),
+        ],
+      ),
+    ) ?? false;
+
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
@@ -129,7 +145,8 @@ class _NetWorthScreenState extends State<NetWorthScreen> {
                 padding: const EdgeInsets.only(right: 16),
                 color: accent2.withOpacity(0.15),
                 child: Icon(Icons.delete, color: accent2, size: 18)),
-              onDismissed: (_) { _data.snapshots.removeAt(origIdx); _save(); },
+              confirmDismiss: (_) async => await _confirm(context, 'Delete this item?'),
+      onDismissed: (_) { _data.snapshots.removeAt(origIdx); _save(); },
               child: Container(
                 margin: const EdgeInsets.only(bottom: 6),
                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
@@ -183,7 +200,7 @@ class _NetWorthScreenState extends State<NetWorthScreen> {
             Text(title, style: GoogleFonts.dmMono(color: color, fontSize: 11, letterSpacing: 2)),
             const Spacer(),
             Text('\$${items.fold(0.0, (s, i) => s + i.amount).toStringAsFixed(2)}',
-              style: GoogleFonts.dmMono(color: muted, fontSize: 12)),
+              style: GoogleFonts.dmMono(color: muted, fontSize: 13)),
           ]),
         ),
         ...items.asMap().entries.map((e) => Dismissible(
@@ -191,7 +208,8 @@ class _NetWorthScreenState extends State<NetWorthScreen> {
           direction: DismissDirection.endToStart,
           background: Container(alignment: Alignment.centerRight, padding: const EdgeInsets.only(right: 16),
             color: accent2.withOpacity(0.15), child: Icon(Icons.delete, color: accent2, size: 18)),
-          onDismissed: (_) { items.removeAt(e.key); _save(); },
+          confirmDismiss: (_) async => await _confirm(context, 'Delete this item?'),
+      onDismissed: (_) { items.removeAt(e.key); _save(); },
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
             child: Row(children: [
@@ -199,7 +217,7 @@ class _NetWorthScreenState extends State<NetWorthScreen> {
                 child: TextFormField(
                   key: ValueKey('nwl_${title}_${e.key}'),
                   initialValue: e.value.name,
-                  style: GoogleFonts.dmMono(color: txt, fontSize: 13),
+                  style: GoogleFonts.dmMono(color: txt, fontSize: 15),
                   decoration: InputDecoration(hintText: 'Label',
                     hintStyle: GoogleFonts.dmMono(color: muted), border: InputBorder.none, isDense: true),
                   onChanged: (v) { e.value.name = v; _save(); },
@@ -210,7 +228,7 @@ class _NetWorthScreenState extends State<NetWorthScreen> {
                 child: TextFormField(
                   key: ValueKey('nwa_${title}_${e.key}'),
                   initialValue: e.value.amount == 0 ? '' : e.value.amount.toStringAsFixed(2),
-                  style: GoogleFonts.dmMono(color: txt, fontSize: 13),
+                  style: GoogleFonts.dmMono(color: txt, fontSize: 15),
                   decoration: InputDecoration(hintText: '0.00',
                     hintStyle: GoogleFonts.dmMono(color: muted), border: InputBorder.none, isDense: true,
                     prefixText: '\$', prefixStyle: GoogleFonts.dmMono(color: muted)),
@@ -226,7 +244,7 @@ class _NetWorthScreenState extends State<NetWorthScreen> {
           ),
         )),
         TextButton(onPressed: onAdd,
-          child: Text('+ Add', style: GoogleFonts.dmMono(color: muted, fontSize: 12))),
+          child: Text('+ Add', style: GoogleFonts.dmMono(color: muted, fontSize: 13))),
       ]),
     );
   }

@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:path_provider/path_provider.dart';
 import 'models/data.dart';
 import 'screens/budget_screen.dart';
 import 'screens/snowball_screen.dart';
@@ -28,7 +29,6 @@ class _FloAppState extends State<FloApp> {
   @override
   void initState() { super.initState(); _data = widget.initialData; }
 
-  // Always save AND setState so font/theme changes propagate immediately
   void _update(FloData d) {
     setState(() => _data = d);
     FloStorage.save(d);
@@ -37,7 +37,6 @@ class _FloAppState extends State<FloApp> {
   @override
   Widget build(BuildContext context) {
     final dark = _data.darkMode;
-
     return MaterialApp(
       title: 'flo',
       debugShowCheckedModeBanner: false,
@@ -52,7 +51,14 @@ class _FloAppState extends State<FloApp> {
         ),
         useMaterial3: true,
       ),
-
+      builder: (ctx, child) {
+        // Apply font scale — 15.0 is the baseline (scale = 1.0)
+        final scale = (_data.fontSize > 0 ? _data.fontSize : 15.0) / 15.0;
+        return MediaQuery(
+          data: MediaQuery.of(ctx).copyWith(
+            textScaler: TextScaler.linear(scale)),
+          child: child!);
+      },
       home: _FloShell(
         data: _data,
         tab: _tab,
@@ -63,7 +69,6 @@ class _FloAppState extends State<FloApp> {
   }
 }
 
-// ── Shell is stateful so settings always read latest data ────────────────────
 class _FloShell extends StatefulWidget {
   final FloData data;
   final int tab;
@@ -76,7 +81,6 @@ class _FloShell extends StatefulWidget {
 }
 
 class _FloShellState extends State<_FloShell> {
-  // Keep local copy so settings sheet always reads current value
   late FloData _cur;
 
   @override
@@ -91,26 +95,136 @@ class _FloShellState extends State<_FloShell> {
 
   void _openUrl(String url) {
     try {
-      if (Platform.isWindows) {
-        Process.run('cmd', ['/c', 'start', '', url]);
-      } else if (Platform.isMacOS) {
-        Process.run('open', [url]);
-      } else {
-        Process.run('xdg-open', [url]);
-      }
+      if (Platform.isWindows) Process.run('cmd', ['/c', 'start', '', url]);
+      else if (Platform.isMacOS) Process.run('open', [url]);
+      else Process.run('xdg-open', [url]);
     } catch (_) {}
   }
+
+  // ── File picker (cross-platform, no dependency needed) ───────────────────
+  Future<String?> _pickSavePath(BuildContext ctx, String filename) async {
+    final ctrl = TextEditingController();
+    // Default path
+    final home = Platform.environment['HOME'] ??
+        Platform.environment['USERPROFILE'] ?? '';
+    final sep = Platform.isWindows ? '\\' : '/';
+    ctrl.text = '$home${sep}$filename';
+
+    return showDialog<String>(
+      context: ctx,
+      builder: (c) => AlertDialog(
+        backgroundColor: _cur.darkMode ? const Color(0xFF1a1a1a) : Colors.white,
+        title: Text('Save as', style: GoogleFonts.dmMono(
+          color: _cur.darkMode ? const Color(0xFFe8e8e8) : const Color(0xFF1c1a17))),
+        content: TextField(
+          controller: ctrl,
+          autofocus: true,
+          style: GoogleFonts.dmMono(
+            color: _cur.darkMode ? const Color(0xFFe8e8e8) : const Color(0xFF1c1a17),
+            fontSize: 13),
+          decoration: InputDecoration(
+            hintText: 'Full path to save file',
+            hintStyle: GoogleFonts.dmMono(color: const Color(0xFF777777), fontSize: 13),
+            enabledBorder: OutlineInputBorder(borderSide: BorderSide(
+              color: _cur.darkMode ? const Color(0xFF3a3a3a) : const Color(0xFFd4cfc6))),
+            focusedBorder: OutlineInputBorder(borderSide: BorderSide(
+              color: _cur.darkMode ? const Color(0xFFc8f560) : const Color(0xFF5a8a00))),
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(c), child: Text('Cancel',
+            style: GoogleFonts.dmMono(color: const Color(0xFF777777)))),
+          TextButton(onPressed: () => Navigator.pop(c, ctrl.text.trim()),
+            child: Text('Save', style: GoogleFonts.dmMono(
+              color: _cur.darkMode ? const Color(0xFFc8f560) : const Color(0xFF5a8a00)))),
+        ],
+      ),
+    );
+  }
+
+  Future<String?> _pickOpenPath(BuildContext ctx, String defaultFile) async {
+    final ctrl = TextEditingController();
+    final home = Platform.environment['HOME'] ??
+        Platform.environment['USERPROFILE'] ?? '';
+    final sep = Platform.isWindows ? '\\' : '/';
+    ctrl.text = '$home${sep}$defaultFile';
+
+    // Suggest known locations
+    final suggestions = Platform.isWindows ? [
+      '${Platform.environment['APPDATA'] ?? ''}\\flo\\data.json',
+      '${home}\\flo_backup.json',
+    ] : [
+      '$home/.local/share/flo/data.json',
+      '${home}/flo_backup.json',
+    ];
+
+    return showDialog<String>(
+      context: ctx,
+      builder: (c) => AlertDialog(
+        backgroundColor: _cur.darkMode ? const Color(0xFF1a1a1a) : Colors.white,
+        title: Text('Open file', style: GoogleFonts.dmMono(
+          color: _cur.darkMode ? const Color(0xFFe8e8e8) : const Color(0xFF1c1a17))),
+        content: Column(mainAxisSize: MainAxisSize.min, children: [
+          TextField(
+            controller: ctrl,
+            autofocus: true,
+            style: GoogleFonts.dmMono(
+              color: _cur.darkMode ? const Color(0xFFe8e8e8) : const Color(0xFF1c1a17),
+              fontSize: 13),
+            decoration: InputDecoration(
+              hintText: 'Full path to file',
+              hintStyle: GoogleFonts.dmMono(color: const Color(0xFF777777), fontSize: 13),
+              enabledBorder: OutlineInputBorder(borderSide: BorderSide(
+                color: _cur.darkMode ? const Color(0xFF3a3a3a) : const Color(0xFFd4cfc6))),
+              focusedBorder: OutlineInputBorder(borderSide: BorderSide(
+                color: _cur.darkMode ? const Color(0xFFc8f560) : const Color(0xFF5a8a00))),
+            ),
+          ),
+          const SizedBox(height: 12),
+          // Quick-select known paths
+          ...suggestions.map((p) => InkWell(
+            onTap: () => ctrl.text = p,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: Row(children: [
+                Icon(Icons.folder_open, size: 14, color: const Color(0xFF777777)),
+                const SizedBox(width: 6),
+                Expanded(child: Text(p, style: GoogleFonts.dmMono(
+                  color: const Color(0xFF777777), fontSize: 10),
+                  overflow: TextOverflow.ellipsis)),
+              ]),
+            ),
+          )),
+        ]),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(c), child: Text('Cancel',
+            style: GoogleFonts.dmMono(color: const Color(0xFF777777)))),
+          TextButton(onPressed: () => Navigator.pop(c, ctrl.text.trim()),
+            child: Text('Open', style: GoogleFonts.dmMono(
+              color: _cur.darkMode ? const Color(0xFFc8f560) : const Color(0xFF5a8a00)))),
+        ],
+      ),
+    );
+  }
+
+  // ── Tab icons ─────────────────────────────────────────────────────────────
+  static const _tabIcons = [
+    Icons.account_balance_wallet_outlined,
+    Icons.ac_unit,
+    Icons.show_chart,
+    Icons.event_note_outlined,
+  ];
+  static const _tabLabels = ['Budget', 'Snowball', 'Net Worth', 'Events'];
 
   @override
   Widget build(BuildContext context) {
     final dark    = _cur.darkMode;
-    final bg       = dark ? const Color(0xFF0f0f0f) : const Color(0xFFf7f5f0);
-    final surface2 = dark ? const Color(0xFF222222) : const Color(0xFFeeebe2);
-    final border   = dark ? const Color(0xFF2e2e2e) : const Color(0xFFd4cfc6);
-    final accent   = dark ? const Color(0xFFc8f560) : const Color(0xFF5a8a00);
-    final muted    = dark ? const Color(0xFF777777) : const Color(0xFF7a7060);
+    final bg      = dark ? const Color(0xFF0f0f0f) : const Color(0xFFf7f5f0);
+    final surface2= dark ? const Color(0xFF1e1e1e) : const Color(0xFFeeebe2);
+    final border  = dark ? const Color(0xFF2e2e2e) : const Color(0xFFd4cfc6);
+    final accent  = dark ? const Color(0xFFc8f560) : const Color(0xFF5a8a00);
+    final muted   = dark ? const Color(0xFF666666) : const Color(0xFF7a7060);
 
-    final tabs = ['Budget', 'Snowball', 'Net Worth', 'Events'];
     final screens = [
       BudgetScreen(data: _cur, onChanged: _save),
       SnowballScreen(data: _cur, onChanged: _save),
@@ -121,43 +235,71 @@ class _FloShellState extends State<_FloShell> {
     return Scaffold(
       backgroundColor: bg,
       body: Column(children: [
-        // ── Top bar ──────────────────────────────────────────────────────
+
+        // ── Top bar ────────────────────────────────────────────────────────
         Container(
           color: surface2,
           child: Column(children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(18, 12, 18, 0),
-              child: Row(children: [
-                Text('flo', style: GoogleFonts.playfairDisplay(
-                  fontSize: 28, color: accent, fontWeight: FontWeight.w700)),
+              padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
+              child: Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
+                // Icon + flo wordmark like HTML version
+                Container(
+                  width: 32, height: 32,
+                  decoration: BoxDecoration(
+                    border: Border.all(color: accent, width: 2),
+                    borderRadius: BorderRadius.circular(8)),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(6),
+                    child: Image.asset('assets/icon.png', fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => Icon(Icons.show_chart, color: accent, size: 20)))),
+                const SizedBox(width: 8),
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text('flo', style: GoogleFonts.playfairDisplay(
+                    fontSize: 22, color: accent, fontWeight: FontWeight.w700, height: 1.1)),
+                  Text('SIMPLE BUDGET APP', style: GoogleFonts.dmMono(
+                    fontSize: 8, color: muted, letterSpacing: 2)),
+                ]),
                 const Spacer(),
                 IconButton(
-                  icon: Icon(Icons.settings, color: muted, size: 20),
-                  onPressed: () => _showSettings(context)),
+                  icon: Icon(Icons.settings_outlined, color: muted, size: 20),
+                  onPressed: () => _showSettings(context),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints()),
               ]),
             ),
-            Row(children: tabs.asMap().entries.map((e) {
-              final sel = e.key == widget.tab;
+            const SizedBox(height: 8),
+            // Tab row with icons
+            Row(children: List.generate(_tabLabels.length, (i) {
+              final sel = i == widget.tab;
               return Expanded(child: GestureDetector(
-                onTap: () => widget.onTabChange(e.key),
+                onTap: () => widget.onTabChange(i),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  padding: const EdgeInsets.symmetric(vertical: 10),
                   decoration: BoxDecoration(border: Border(bottom: BorderSide(
                     color: sel ? accent : Colors.transparent, width: 2))),
-                  child: Text(e.value, textAlign: TextAlign.center,
-                    style: GoogleFonts.dmMono(fontSize: 11, letterSpacing: 1.5,
-                      color: sel ? accent : muted, fontWeight: FontWeight.w500)),
+                  child: Column(mainAxisSize: MainAxisSize.min, children: [
+                    Icon(_tabIcons[i],
+                      size: 16,
+                      color: sel ? accent : muted),
+                    const SizedBox(height: 3),
+                    Text(_tabLabels[i],
+                      style: GoogleFonts.dmMono(
+                        fontSize: 9, letterSpacing: 1.2,
+                        color: sel ? accent : muted,
+                        fontWeight: sel ? FontWeight.w600 : FontWeight.w400)),
+                  ]),
                 ),
               ));
-            }).toList()),
+            })),
             Divider(height: 1, color: border),
           ]),
         ),
 
-        // ── Screen ───────────────────────────────────────────────────────
+        // ── Screen ────────────────────────────────────────────────────────
         Expanded(child: screens[widget.tab]),
 
-        // ── Bottom bar ───────────────────────────────────────────────────
+        // ── Bottom bar ────────────────────────────────────────────────────
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
           decoration: BoxDecoration(
@@ -167,19 +309,18 @@ class _FloShellState extends State<_FloShell> {
             GestureDetector(
               onTap: () => _openUrl('https://www.paypal.com/paypalme/speeddevilx'),
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
                 decoration: BoxDecoration(
                   color: const Color(0xFF1a2a0a),
-                  border: Border.all(color: accent.withOpacity(0.4)),
+                  border: Border.all(color: accent.withOpacity(0.35)),
                   borderRadius: BorderRadius.circular(20)),
                 child: Row(mainAxisSize: MainAxisSize.min, children: [
-                  const Text('☕', style: TextStyle(fontSize: 13)),
+                  const Text('☕', style: TextStyle(fontSize: 12)),
                   const SizedBox(width: 5),
                   Text('Buy me a coffee',
-                    style: GoogleFonts.dmMono(color: accent, fontSize: 11)),
+                    style: GoogleFonts.dmMono(color: accent, fontSize: 10)),
                 ]),
-              ),
-            ),
+              )),
           ]),
         ),
       ]),
@@ -211,7 +352,7 @@ class _FloShellState extends State<_FloShell> {
           ListTile(
             leading: Icon(dark ? Icons.light_mode : Icons.dark_mode, color: accent),
             title: Text(dark ? 'Switch to Light Mode' : 'Switch to Dark Mode',
-              style: GoogleFonts.dmMono(color: txt)),
+              style: GoogleFonts.dmMono(color: txt, fontSize: 14)),
             onTap: () {
               Navigator.pop(ctx);
               _save(FloData(budgets: _cur.budgets, debts: _cur.debts,
@@ -221,21 +362,59 @@ class _FloShellState extends State<_FloShell> {
             }),
           Divider(color: border),
 
+          // Font size — 3 icon buttons, no slider
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            child: Row(children: [
+              Icon(Icons.format_size, color: muted, size: 18),
+              const SizedBox(width: 10),
+              Text('Text Size', style: GoogleFonts.dmMono(color: txt, fontSize: 14)),
+              const Spacer(),
+              for (final entry in [('A', 13.0, 13.0), ('A', 15.0, 15.0), ('A', 18.0, 18.0)])
+                Padding(
+                  padding: const EdgeInsets.only(left: 8),
+                  child: GestureDetector(
+                    onTap: () {
+                      Navigator.pop(ctx);
+                      _save(FloData(budgets: _cur.budgets, debts: _cur.debts,
+                        extraPayment: _cur.extraPayment, assets: _cur.assets,
+                        liabilities: _cur.liabilities, snapshots: _cur.snapshots,
+                        events: _cur.events, darkMode: _cur.darkMode, fontSize: entry.$2));
+                    },
+                    child: Container(
+                      width: 40, height: 36,
+                      decoration: BoxDecoration(
+                        color: _cur.fontSize == entry.$2 ? accent.withOpacity(0.15) : Colors.transparent,
+                        border: Border.all(
+                          color: _cur.fontSize == entry.$2 ? accent : border),
+                        borderRadius: BorderRadius.circular(6)),
+                      alignment: Alignment.center,
+                      child: Text(entry.$1,
+                        style: TextStyle(
+                          fontSize: entry.$3,
+                          fontWeight: FontWeight.bold,
+                          color: _cur.fontSize == entry.$2 ? accent : muted)),
+                    ),
+                  ),
+                ),
+            ]),
+          ),
           Divider(color: border),
 
           // Export
           ListTile(
             leading: Icon(Icons.upload_file, color: muted),
-            title: Text('Export Backup', style: GoogleFonts.dmMono(color: txt)),
-            subtitle: Text('Saves ~/flo_backup.json',
+            title: Text('Export Backup', style: GoogleFonts.dmMono(color: txt, fontSize: 14)),
+            subtitle: Text('Choose where to save your backup',
               style: GoogleFonts.dmMono(color: muted, fontSize: 10)),
             onTap: () async {
               Navigator.pop(ctx);
+              final path = await _pickSavePath(context, 'flo_backup.json');
+              if (path == null || path.isEmpty) return;
               try {
-                final path = '${Platform.environment['HOME']}/flo_backup.json';
-                File(path).writeAsStringSync(jsonEncode(_cur.toJson()));
+                await File(path).writeAsString(jsonEncode(_cur.toJson()));
                 if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                  content: Text('Saved to ~/flo_backup.json',
+                  content: Text('Saved to $path',
                     style: GoogleFonts.dmMono(color: const Color(0xFF0f0f0f))),
                   backgroundColor: accent, duration: const Duration(seconds: 3)));
               } catch (e) {
@@ -247,52 +426,46 @@ class _FloShellState extends State<_FloShell> {
           // Import
           ListTile(
             leading: Icon(Icons.download, color: muted),
-            title: Text('Import Backup', style: GoogleFonts.dmMono(color: txt)),
-            subtitle: Text('Loads ~/flo_backup.json or ~/.local/share/flo/data.json',
+            title: Text('Import Backup', style: GoogleFonts.dmMono(color: txt, fontSize: 14)),
+            subtitle: Text('Choose a flo_backup.json or data.json file',
               style: GoogleFonts.dmMono(color: muted, fontSize: 10)),
             onTap: () async {
               Navigator.pop(ctx);
-              final paths = [
-                '${Platform.environment['HOME']}/flo_backup.json',
-                '${Platform.environment['HOME']}/.local/share/flo/data.json',
-              ];
-              for (final path in paths) {
-                final file = File(path);
-                if (await file.exists()) {
-                  try {
-                    final imported = FloData.fromJson(jsonDecode(await file.readAsString()));
-                    _save(imported);
-                    if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                      content: Text('Imported from $path',
-                        style: GoogleFonts.dmMono(color: const Color(0xFF0f0f0f))),
-                      backgroundColor: accent));
-                    return;
-                  } catch (e) {
-                    if (mounted) ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Import failed: $e')));
-                    return;
-                  }
-                }
+              final path = await _pickOpenPath(context, 'flo_backup.json');
+              if (path == null || path.isEmpty) return;
+              final file = File(path);
+              if (!await file.exists()) {
+                if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('File not found: $path',
+                    style: GoogleFonts.dmMono())));
+                return;
               }
-              if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                content: Text('No backup found. Copy data.json to ~/flo_backup.json',
-                  style: GoogleFonts.dmMono())));
+              try {
+                final imported = FloData.fromJson(jsonDecode(await file.readAsString()));
+                _save(imported);
+                if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                  content: Text('Imported from $path',
+                    style: GoogleFonts.dmMono(color: const Color(0xFF0f0f0f))),
+                  backgroundColor: accent));
+              } catch (e) {
+                if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Import failed: $e')));
+              }
             }),
           Divider(color: border),
 
           // Check for update
           ListTile(
             leading: Icon(Icons.system_update_alt, color: muted),
-            title: Text('Check for Update', style: GoogleFonts.dmMono(color: txt)),
+            title: Text('Check for Update', style: GoogleFonts.dmMono(color: txt, fontSize: 14)),
             subtitle: Text('Opens latest release on GitHub',
               style: GoogleFonts.dmMono(color: muted, fontSize: 10)),
             onTap: () { Navigator.pop(ctx); _openUrl('https://github.com/thatspeedykid/flo/releases/latest'); }),
-          Divider(color: border),
 
           // GitHub
           ListTile(
             leading: Icon(Icons.code, color: muted),
-            title: Text('GitHub', style: GoogleFonts.dmMono(color: txt)),
+            title: Text('GitHub', style: GoogleFonts.dmMono(color: txt, fontSize: 14)),
             subtitle: Text('github.com/thatspeedykid/flo',
               style: GoogleFonts.dmMono(color: muted, fontSize: 10)),
             onTap: () { Navigator.pop(ctx); _openUrl('https://github.com/thatspeedykid/flo'); }),
@@ -301,11 +474,13 @@ class _FloShellState extends State<_FloShell> {
           Padding(
             padding: const EdgeInsets.all(16),
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text('flo v1.4.0', style: GoogleFonts.dmMono(color: muted, fontSize: 12)),
+              Text('flo v1.4.1', style: GoogleFonts.dmMono(color: muted, fontSize: 12)),
               const SizedBox(height: 2),
-              Text('Linux · Windows · Android/iOS coming', style: GoogleFonts.dmMono(color: muted, fontSize: 10)),
+              Text('Linux · Windows · Android/iOS coming',
+                style: GoogleFonts.dmMono(color: muted, fontSize: 10)),
               const SizedBox(height: 2),
-              Text('MIT License — free & open source', style: GoogleFonts.dmMono(color: muted, fontSize: 10)),
+              Text('MIT License — free & open source',
+                style: GoogleFonts.dmMono(color: muted, fontSize: 10)),
             ])),
         ]),
       ),

@@ -1,9 +1,9 @@
 @echo off
 setlocal enabledelayedexpansion
-title flo v1.4.0 - Windows Build
+title flo v1.4.1 - Windows Build
 
 echo ╔══════════════════════════════════════╗
-echo ║  flo v1.4.0 - Windows Build          ║
+echo ║  flo v1.4.1 - Windows Build          ║
 echo ╚══════════════════════════════════════╝
 echo.
 
