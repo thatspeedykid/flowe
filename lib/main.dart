@@ -303,24 +303,47 @@ class _FloShellState extends State<_FloShell> {
                 );
               }),
               const Spacer(),
-              // Settings at bottom of sidebar (tablet = mobile, no coffee)
+              // Settings at bottom of sidebar
+              // Coffee on desktop, settings-only on tablet (iOS/Android)
               Padding(
                 padding: EdgeInsets.fromLTRB(8, 0, 8,
                   MediaQuery.of(context).padding.bottom + 12),
-                child: GestureDetector(
-                  onTap: () => _showSettings(context),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                    decoration: BoxDecoration(
-                      border: Border.all(color: border),
-                      borderRadius: BorderRadius.circular(8)),
-                    child: Row(children: [
-                      Icon(Icons.settings_outlined, color: muted, size: 16),
-                      const SizedBox(width: 10),
-                      Text('Settings', style: GoogleFonts.dmMono(color: muted, fontSize: 12)),
-                    ]),
+                child: Column(children: [
+                  if (!Platform.isIOS && !Platform.isAndroid) ...[
+                    GestureDetector(
+                      onTap: () => _openUrl('https://www.paypal.me/Speeddevilx'),
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: dark ? const Color(0xFF1a2a0a) : const Color(0xFFe8f5c8),
+                          border: Border.all(color: accent.withOpacity(0.35)),
+                          borderRadius: BorderRadius.circular(8)),
+                        child: Row(children: [
+                          const Text('☕', style: TextStyle(fontSize: 13)),
+                          const SizedBox(width: 8),
+                          Text('Buy me a coffee',
+                            style: GoogleFonts.dmMono(color: accent, fontSize: 11)),
+                        ]),
+                      )),
+                    const SizedBox(height: 8),
+                  ],
+                  GestureDetector(
+                    onTap: () => _showSettings(context),
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: border),
+                        borderRadius: BorderRadius.circular(8)),
+                      child: Row(children: [
+                        Icon(Icons.settings_outlined, color: muted, size: 16),
+                        const SizedBox(width: 10),
+                        Text('Settings', style: GoogleFonts.dmMono(color: muted, fontSize: 12)),
+                      ]),
+                    ),
                   ),
-                ),
+                ]),
               ),
             ]),
           ),
@@ -430,7 +453,7 @@ class _FloShellState extends State<_FloShell> {
                 ))
             else
               GestureDetector(
-                onTap: () => _openUrl('https://www.paypal.com/paypalme/speeddevilx'),
+                onTap: () => _openUrl('https://www.paypal.me/Speeddevilx'),
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
                   decoration: BoxDecoration(
