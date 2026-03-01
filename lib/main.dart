@@ -474,7 +474,7 @@ class _FloShellState extends State<_FloShell> {
           Padding(
             padding: const EdgeInsets.all(16),
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text('flo v1.4.1', style: GoogleFonts.dmMono(color: muted, fontSize: 12)),
+              Text('flo v1.4.2', style: GoogleFonts.dmMono(color: muted, fontSize: 12)),
               const SizedBox(height: 2),
               Text('Linux · Windows · Android/iOS coming',
                 style: GoogleFonts.dmMono(color: muted, fontSize: 10)),

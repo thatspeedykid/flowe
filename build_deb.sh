@@ -2,7 +2,7 @@
 set -e
 
 APP="flo"
-VERSION="1.4.1"
+VERSION="1.4.2"
 ARCH="amd64"
 DEB_DIR="/tmp/flo_deb"
 

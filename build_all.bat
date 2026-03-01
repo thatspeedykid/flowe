@@ -1,97 +1,84 @@
 @echo off
-setlocal enabledelayedexpansion
-title flo v1.4.1 - Build All Platforms
-chcp 65001 >nul
-
+setlocal
+cd /d "%~dp0"
+set VERSION=1.4.2
+title flo v%VERSION% - Build All
+echo.
 echo ==========================================
-echo   flo v1.4.1 - Build All Platforms
-echo   Windows EXE + Linux DEB + Android APK
+echo   flo v%VERSION% - Build All Platforms
+echo   Windows EXE + Android APK
 echo ==========================================
 echo.
 
-:: ── Check Flutter ─────────────────────────────────────────────────────────────
+if not exist "installers" mkdir installers
+
 where flutter >nul 2>&1
 if errorlevel 1 (
     echo [ERROR] Flutter not found in PATH.
-    echo Download: https://docs.flutter.dev/get-started/install/windows
     pause & exit /b 1
 )
 
 :: ── Step 1: Dependencies ──────────────────────────────────────────────────────
-echo [1/4] Getting Flutter dependencies...
-flutter pub get
-if errorlevel 1 ( echo [ERROR] flutter pub get failed & pause & exit /b 1 )
+echo [1/5] Getting dependencies...
+call flutter pub get
+if errorlevel 1 goto :fail
+echo [OK] Dependencies ready.
 echo.
 
-:: ── Step 2: Ensure platform folders exist ────────────────────────────────────
-echo [2/4] Ensuring platform support is configured...
-flutter create --platforms=windows,linux,android . >nul 2>&1
-echo Done.
+:: ── Step 2: Platform setup + icon injection ───────────────────────────────────
+echo [2/5] Setting up platforms and injecting icons...
+call flutter create --platforms=windows,android . >nul 2>&1
+call inject_icons.bat
 echo.
 
-:: ── Step 3: Build Windows ─────────────────────────────────────────────────────
-echo [3/4] Building Windows release...
-flutter build windows --release
-if errorlevel 1 ( echo [ERROR] Windows build failed & pause & exit /b 1 )
-echo [OK] Windows build done.
-echo      Output: build\windows\x64\runner\Release\
+:: ── Step 3: Windows EXE ───────────────────────────────────────────────────────
+echo [3/5] Building Windows release...
+call flutter build windows --release
+if errorlevel 1 goto :fail
+if exist "build\windows\x64\runner\Release\flo.exe" (
+    echo [OK] Windows EXE built.
+) else ( echo [ERROR] EXE not found & goto :fail )
 echo.
 
-:: ── Step 4: Build Android APK ─────────────────────────────────────────────────
-echo [4/4] Building Android APK...
-flutter build apk --release
-if errorlevel 1 (
-    echo [WARN] Android build failed. Is Android SDK installed?
-    echo        Install Android Studio: https://developer.android.com/studio
-    echo        Then run: flutter doctor
-    echo.
-    goto :windows_installer
-)
-echo [OK] Android APK done.
-echo      Output: build\app\outputs\flutter-apk\app-release.apk
+:: ── Step 4: Android APK ───────────────────────────────────────────────────────
+echo [4/5] Building Android APK...
+call flutter build apk --release
+if errorlevel 1 goto :fail
 if exist "build\app\outputs\flutter-apk\app-release.apk" (
-    copy "build\app\outputs\flutter-apk\app-release.apk" "flo_1.4.1.apk" >nul
-    echo      Copied to: flo_1.4.1.apk
-)
+    copy /Y "build\app\outputs\flutter-apk\app-release.apk" "installers\flo_%VERSION%.apk" >nul
+    echo [OK] Android APK: installers\flo_%VERSION%.apk
+) else ( echo [ERROR] APK not found & goto :fail )
 echo.
 
-:windows_installer
-:: ── Step 5: Build installer (NSIS optional) ───────────────────────────────────
+:: ── Step 5: NSIS Installer ────────────────────────────────────────────────────
+echo [5/5] Building Windows installer...
 where makensis >nul 2>&1
 if errorlevel 1 (
-    echo [INFO] NSIS not installed - portable build only.
-    echo        To build flo_setup.exe: https://nsis.sourceforge.io
-    echo        Then re-run this script.
-    echo.
+    echo [INFO] NSIS not found - skipping. Get it: https://nsis.sourceforge.io
     goto :done
 )
-
-echo [+] Building Windows installer...
+if not exist "flo_setup.nsi" ( echo [INFO] flo_setup.nsi missing & goto :done )
 makensis flo_setup.nsi
-if errorlevel 1 ( echo [ERROR] NSIS failed & goto :done )
-echo [OK] Installer built: flo_setup.exe
+if errorlevel 1 goto :fail
+if exist "flo_setup.exe" (
+    move /Y "flo_setup.exe" "installers\flo_%VERSION%_setup.exe" >nul
+    echo [OK] Installer: installers\flo_%VERSION%_setup.exe
+)
 echo.
 
 :done
 echo ==========================================
-echo   Build Summary
+echo   BUILD COMPLETE  -^>  installers\
 echo ==========================================
-if exist "build\windows\x64\runner\Release\flo.exe" (
-    echo [OK] Windows:  build\windows\x64\runner\Release\flo.exe
-) else (
-    echo [--] Windows:  not built
-)
-if exist "flo_1.4.1.apk" (
-    echo [OK] Android:  flo_1.4.1.apk
-) else (
-    echo [--] Android:  not built (requires Android SDK)
-)
-if exist "flo_setup.exe" (
-    echo [OK] Installer: flo_setup.exe
-) else (
-    echo [--] Installer: not built (requires NSIS)
-)
 echo.
-echo Note: Linux DEB must be built on Linux - run: bash build_all.sh
-echo ==========================================
 pause
+exit /b 0
+
+:fail
+echo.
+echo ==========================================
+echo   BUILD FAILED - see errors above
+echo ==========================================
+echo.
+pause
+exit /b 1

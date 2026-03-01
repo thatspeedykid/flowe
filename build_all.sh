@@ -1,6 +1,6 @@
 #!/bin/bash
 set -e
-VERSION="1.4.1"
+VERSION="1.4.2"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 cd "$SCRIPT_DIR"
 
@@ -10,41 +10,42 @@ echo "  Linux DEB + Android APK"
 echo "=========================================="
 echo ""
 
-# ── Check Flutter ──────────────────────────────────────────────────────────────
+mkdir -p installers
+
 if ! command -v flutter &>/dev/null; then
-  echo "[ERROR] Flutter not found. https://docs.flutter.dev/get-started/install/linux"
+  echo "[ERROR] Flutter not found."
+  echo "  Install: https://docs.flutter.dev/get-started/install/linux"
   exit 1
 fi
 
 # ── Step 1: Dependencies ───────────────────────────────────────────────────────
-echo "[1/4] Getting Flutter dependencies..."
+echo "[1/4] Getting dependencies..."
 flutter pub get
 echo ""
 
-# ── Step 2: Ensure platform folders exist ─────────────────────────────────────
-echo "[2/4] Ensuring platform support is configured..."
+# ── Step 2: Platform setup + icons ────────────────────────────────────────────
+echo "[2/4] Setting up platforms and injecting icons..."
 flutter create --platforms=linux,android . >/dev/null 2>&1 || true
-echo "Done."
+bash inject_icons.sh
 echo ""
 
-# ── Step 3: Build Linux ────────────────────────────────────────────────────────
+# ── Step 3: Linux build ────────────────────────────────────────────────────────
 echo "[3/4] Building Linux release..."
 flutter build linux --release
 echo "[OK] Linux build done."
 echo ""
 
-# ── Step 4: Build Android APK ─────────────────────────────────────────────────
+# ── Step 4: Android APK ───────────────────────────────────────────────────────
 echo "[4/4] Building Android APK..."
-if flutter build apk --release 2>/dev/null; then
+if flutter build apk --release; then
   APK="build/app/outputs/flutter-apk/app-release.apk"
-  [ -f "$APK" ] && cp "$APK" "flo_${VERSION}.apk" && echo "[OK] Android APK: flo_${VERSION}.apk"
+  [ -f "$APK" ] && cp "$APK" "installers/flo_${VERSION}.apk" && echo "[OK] Android APK: installers/flo_${VERSION}.apk"
 else
   echo "[WARN] Android build failed - is Android SDK installed?"
-  echo "       Install: https://developer.android.com/studio"
 fi
 echo ""
 
-# ── Step 5: Package Linux DEB ─────────────────────────────────────────────────
+# ── Package DEB ───────────────────────────────────────────────────────────────
 echo "[+] Packaging Linux .deb..."
 DEB_DIR="/tmp/flo_deb"
 rm -rf "$DEB_DIR"
@@ -105,21 +106,18 @@ SH
 chmod 755 "$DEB_DIR/DEBIAN/$script"
 done
 
-DEB_FILE="flo_${VERSION}_amd64.deb"
-dpkg-deb --build "$DEB_DIR" "$DEB_FILE"
-echo "[OK] DEB built: $DEB_FILE ($(du -sh "$DEB_FILE" | cut -f1))"
+dpkg-deb --build "$DEB_DIR" "installers/flo_${VERSION}_amd64.deb"
+echo "[OK] Linux DEB: installers/flo_${VERSION}_amd64.deb"
 
 echo ""
 echo "=========================================="
-echo "  Build Summary"
+echo "  Build Summary  ->  installers/"
 echo "=========================================="
-[ -f "flo_${VERSION}_amd64.deb" ] && echo "[OK] Linux DEB:  flo_${VERSION}_amd64.deb" || echo "[--] Linux DEB:  failed"
-[ -f "flo_${VERSION}.apk"       ] && echo "[OK] Android:    flo_${VERSION}.apk"       || echo "[--] Android:    not built"
+[ -f "installers/flo_${VERSION}_amd64.deb" ] && echo "[OK] Linux DEB:   installers/flo_${VERSION}_amd64.deb" || echo "[--] Linux DEB:   FAILED"
+[ -f "installers/flo_${VERSION}.apk"       ] && echo "[OK] Android APK: installers/flo_${VERSION}.apk"       || echo "[--] Android APK: not built"
 echo ""
-echo "Note: Windows EXE must be built on Windows - run: build_all.bat"
+echo "  Windows + iOS/macOS: use build_all_mac.sh on Mac"
+echo "=========================================="
 echo ""
 read -p "Install DEB now? [y/N] " ans
-if [[ "$ans" =~ ^[Yy]$ ]]; then
-  sudo apt install -y "./$DEB_FILE"
-  echo "[OK] flo $VERSION installed! Run: flo"
-fi
+[[ "$ans" =~ ^[Yy]$ ]] && sudo apt install -y "./installers/flo_${VERSION}_amd64.deb" && echo "[OK] Installed!"

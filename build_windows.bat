@@ -22,6 +22,16 @@ if errorlevel 1 ( echo [ERROR] flutter pub get failed & pause & exit /b 1 )
 
 :: ── Build release ─────────────────────────────────────────────────────────────
 echo ^> Building Windows release...
+
+:: Copy custom icon into runner before building
+if exist "assets\app_icon.ico" (
+    copy /Y "assets\app_icon.ico" "windows\runner\resources\app_icon.ico" >nul
+    echo [OK] Custom icon applied.
+) else if exist "assets\icon.ico" (
+    copy /Y "assets\icon.ico" "windows\runner\resources\app_icon.ico" >nul
+    echo [OK] Custom icon applied.
+)
+
 flutter build windows --release
 if errorlevel 1 ( echo [ERROR] Flutter build failed & pause & exit /b 1 )
 echo [OK] Flutter build done

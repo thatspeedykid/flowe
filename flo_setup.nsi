@@ -1,8 +1,7 @@
-; flo v1.4.0 NSIS Installer Script
-; Requires NSIS 3.x — https://nsis.sourceforge.io
+; flo v1.4.2 NSIS Installer Script
 
 !define APP_NAME        "flo"
-!define APP_VERSION     "1.4.1"
+!define APP_VERSION     "1.4.2"
 !define APP_PUBLISHER   "speeddevilx"
 !define APP_URL         "https://github.com/thatspeedykid/flo"
 !define APP_EXE         "flo.exe"
@@ -13,9 +12,13 @@ Name "${APP_NAME} ${APP_VERSION}"
 OutFile "flo_setup.exe"
 InstallDir "${INSTALL_DIR}"
 InstallDirRegKey HKCU "${UNINSTALL_KEY}" "InstallLocation"
-RequestExecutionLevel user   ; No UAC prompt
+RequestExecutionLevel user
 Unicode True
 SetCompressor /SOLID lzma
+
+; Installer icon (shows on the setup.exe itself)
+Icon "assets\app_icon.ico"
+UninstallIcon "assets\app_icon.ico"
 
 ; ── Pages ──────────────────────────────────────────────────────────────────────
 Page directory
@@ -30,44 +33,38 @@ Section "Install"
   ; Copy entire release bundle
   File /r "build\windows\x64\runner\Release\*.*"
 
-  ; Start menu shortcut
+  ; Replace the icon on the installed flo.exe using our .ico
+  ; (the exe already has it embedded from build step — this is a safety copy)
+  SetOutPath "$INSTDIR"
+
+  ; Shortcuts
   CreateDirectory "$SMPROGRAMS\flo"
-  CreateShortcut "$SMPROGRAMS\flo\flo.lnk" "$INSTDIR\${APP_EXE}" "" "$INSTDIR\${APP_EXE}"
+  CreateShortcut "$SMPROGRAMS\flo\flo.lnk"           "$INSTDIR\${APP_EXE}" "" "$INSTDIR\${APP_EXE}" 0
   CreateShortcut "$SMPROGRAMS\flo\Uninstall flo.lnk" "$INSTDIR\uninstall.exe"
+  CreateShortcut "$DESKTOP\flo.lnk"                  "$INSTDIR\${APP_EXE}" "" "$INSTDIR\${APP_EXE}" 0
 
-  ; Desktop shortcut
-  CreateShortcut "$DESKTOP\flo.lnk" "$INSTDIR\${APP_EXE}" "" "$INSTDIR\${APP_EXE}"
-
-  ; Write uninstaller
+  ; Uninstaller
   WriteUninstaller "$INSTDIR\uninstall.exe"
 
-  ; Add/Remove Programs entry
-  WriteRegStr HKCU "${UNINSTALL_KEY}" "DisplayName"      "${APP_NAME}"
-  WriteRegStr HKCU "${UNINSTALL_KEY}" "DisplayVersion"   "${APP_VERSION}"
-  WriteRegStr HKCU "${UNINSTALL_KEY}" "Publisher"        "${APP_PUBLISHER}"
-  WriteRegStr HKCU "${UNINSTALL_KEY}" "URLInfoAbout"     "${APP_URL}"
-  WriteRegStr HKCU "${UNINSTALL_KEY}" "InstallLocation"  "$INSTDIR"
-  WriteRegStr HKCU "${UNINSTALL_KEY}" "UninstallString"  "$INSTDIR\uninstall.exe"
-  WriteRegStr HKCU "${UNINSTALL_KEY}" "DisplayIcon"      "$INSTDIR\${APP_EXE}"
-  WriteRegDWORD HKCU "${UNINSTALL_KEY}" "NoModify"       1
-  WriteRegDWORD HKCU "${UNINSTALL_KEY}" "NoRepair"       1
-
-  MessageBox MB_OK "flo ${APP_VERSION} installed!$\n$\nLaunch from your Start Menu or Desktop shortcut."
+  ; Add/Remove Programs
+  WriteRegStr   HKCU "${UNINSTALL_KEY}" "DisplayName"      "${APP_NAME}"
+  WriteRegStr   HKCU "${UNINSTALL_KEY}" "DisplayVersion"   "${APP_VERSION}"
+  WriteRegStr   HKCU "${UNINSTALL_KEY}" "Publisher"        "${APP_PUBLISHER}"
+  WriteRegStr   HKCU "${UNINSTALL_KEY}" "URLInfoAbout"     "${APP_URL}"
+  WriteRegStr   HKCU "${UNINSTALL_KEY}" "InstallLocation"  "$INSTDIR"
+  WriteRegStr   HKCU "${UNINSTALL_KEY}" "UninstallString"  "$INSTDIR\uninstall.exe"
+  WriteRegStr   HKCU "${UNINSTALL_KEY}" "DisplayIcon"      "$INSTDIR\${APP_EXE}"
+  WriteRegDWORD HKCU "${UNINSTALL_KEY}" "NoModify"         1
+  WriteRegDWORD HKCU "${UNINSTALL_KEY}" "NoRepair"         1
 SectionEnd
 
 ; ── Uninstall ──────────────────────────────────────────────────────────────────
 Section "Uninstall"
-  ; Remove files (keep data — user's financial data stays safe)
   RMDir /r "$INSTDIR"
-
-  ; Remove shortcuts
   Delete "$SMPROGRAMS\flo\flo.lnk"
   Delete "$SMPROGRAMS\flo\Uninstall flo.lnk"
   RMDir  "$SMPROGRAMS\flo"
   Delete "$DESKTOP\flo.lnk"
-
-  ; Remove registry
   DeleteRegKey HKCU "${UNINSTALL_KEY}"
-
-  MessageBox MB_OK "flo has been uninstalled.$\n$\nYour data at %APPDATA%\flo\flo\ was kept."
+  MessageBox MB_OK "flo has been uninstalled.$\n$\nYour data at %APPDATA%\flo\ was kept."
 SectionEnd
