@@ -246,7 +246,12 @@ class _FloShellState extends State<_FloShell> {
           color: surface2,
           child: Column(children: [
             Padding(
-              padding: EdgeInsets.fromLTRB(16, MediaQuery.of(context).padding.top + 10, 16, 0),
+              // Push down below status bar on mobile, minimal on desktop
+              padding: EdgeInsets.fromLTRB(16,
+                (Platform.isIOS || Platform.isAndroid)
+                  ? MediaQuery.of(context).padding.top + 8
+                  : 10,
+                16, 0),
               child: Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
                 // Icon + Flowe wordmark
                 Container(
@@ -266,11 +271,13 @@ class _FloShellState extends State<_FloShell> {
                     fontSize: 8, color: muted, letterSpacing: 2)),
                 ]),
                 const Spacer(),
-                IconButton(
-                  icon: Icon(Icons.settings_outlined, color: muted, size: 20),
-                  onPressed: () => _showSettings(context),
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints()),
+                // Settings gear — desktop only (mobile has it in bottom bar)
+                if (!Platform.isIOS && !Platform.isAndroid)
+                  IconButton(
+                    icon: Icon(Icons.settings_outlined, color: muted, size: 20),
+                    onPressed: () => _showSettings(context),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints()),
               ]),
             ),
             const SizedBox(height: 8),
@@ -304,30 +311,33 @@ class _FloShellState extends State<_FloShell> {
         // ── Screen ────────────────────────────────────────────────────────
         Expanded(child: screens[widget.tab]),
 
-        // ── Bottom bar ────────────────────────────────────────────────────
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-          decoration: BoxDecoration(
-            color: surface2, border: Border(top: BorderSide(color: border))),
-          child: Row(children: [
-            const Spacer(),
-            GestureDetector(
-              onTap: () => _openUrl('https://www.paypal.com/paypalme/speeddevilx'),
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF1a2a0a),
-                  border: Border.all(color: accent.withOpacity(0.35)),
-                  borderRadius: BorderRadius.circular(20)),
-                child: Row(mainAxisSize: MainAxisSize.min, children: [
-                  const Text('☕', style: TextStyle(fontSize: 12)),
-                  const SizedBox(width: 5),
-                  Text('Buy me a coffee',
-                    style: GoogleFonts.dmMono(color: accent, fontSize: 10)),
-                ]),
-              )),
-          ]),
-        ),
+        // ── Bottom bar — mobile only, settings button ─────────────────────
+        if (Platform.isIOS || Platform.isAndroid)
+          Container(
+            padding: EdgeInsets.only(
+              left: 16, right: 16, top: 6,
+              bottom: MediaQuery.of(context).padding.bottom + 6),
+            decoration: BoxDecoration(
+              color: surface2,
+              border: Border(top: BorderSide(color: border))),
+            child: Row(children: [
+              const Spacer(),
+              GestureDetector(
+                onTap: () => _showSettings(context),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: border),
+                    borderRadius: BorderRadius.circular(20)),
+                  child: Row(mainAxisSize: MainAxisSize.min, children: [
+                    Icon(Icons.settings_outlined, color: muted, size: 14),
+                    const SizedBox(width: 6),
+                    Text('Settings',
+                      style: GoogleFonts.dmMono(color: muted, fontSize: 11)),
+                  ]),
+                )),
+            ]),
+          ),
       ]),
     );
   }
