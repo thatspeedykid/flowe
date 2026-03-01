@@ -39,10 +39,37 @@ echo ""
 # ── Step 2: Platform setup + icons ────────────────────────────────────────────
 echo "[2/5] Setting up platforms and injecting icons..."
 flutter create --platforms=macos,ios . >/dev/null 2>&1 || true
-bash inject_icons.sh
 
-# Fix macOS entitlements (prevents blank window)
-bash macos_entitlements_fix.sh
+# Allow entitlements modification in Xcode project settings
+if [ -f "macos/Runner.xcodeproj/project.pbxproj" ]; then
+  sed -i '' 's/CODE_SIGN_STYLE = Automatic;/CODE_SIGN_STYLE = Automatic;
+				CODE_SIGN_ALLOW_ENTITLEMENTS_MODIFICATION = YES;/g' macos/Runner.xcodeproj/project.pbxproj 2>/dev/null || true
+fi
+
+# Write entitlements BEFORE build (must be done before pod install)
+for ENT in macos/Runner/Release.entitlements macos/Runner/DebugProfile.entitlements; do
+  [ -f "$ENT" ] && cat > "$ENT" << 'PLIST'
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>com.apple.security.app-sandbox</key>
+    <true/>
+    <key>com.apple.security.cs.allow-jit</key>
+    <true/>
+    <key>com.apple.security.network.client</key>
+    <true/>
+    <key>com.apple.security.files.user-selected.read-write</key>
+    <true/>
+    <key>com.apple.security.files.downloads.read-write</key>
+    <true/>
+</dict>
+</plist>
+PLIST
+  echo "  [OK] Entitlements: $ENT"
+done
+
+bash inject_icons.sh
 
 # iOS icon Contents.json — tells Xcode what each icon file is
 cat > "ios/Runner/Assets.xcassets/AppIcon.appiconset/Contents.json" << 'JSON'
@@ -95,6 +122,8 @@ echo ""
 
 # ── Step 3: macOS app ─────────────────────────────────────────────────────────
 echo "[3/5] Building macOS app..."
+# Allow entitlements modification during build
+export XCODE_XCCONFIG_FILE=""
 flutter build macos --release
 if [ -d "build/macos/Build/Products/Release/flo.app" ]; then
   # Package as .dmg if create-dmg is available, otherwise zip
