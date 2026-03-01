@@ -37,7 +37,12 @@ fi
 # ── Linux ─────────────────────────────────────────────────────────────────────
 if [ -d "linux/runner" ]; then
   [ -f "$ASSETS/icon_512.png" ] && cp "$ASSETS/icon_512.png" "linux/runner/my_application_icon.png"
-  echo "  [OK] Linux icon"
+  # Also copy sized icons for desktop integration
+  for size in 16 32 48 64 128 256 512; do
+    src="$ASSETS/icon_${size}.png"
+    [ -f "$src" ] && cp "$src" "linux/runner/icon_${size}.png"
+  done
+  echo "  [OK] Linux icons"
 fi
 
 echo "→ Icons done."

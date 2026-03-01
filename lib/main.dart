@@ -237,6 +237,103 @@ class _FloShellState extends State<_FloShell> {
       EventsScreen(data: _cur, onChanged: _save),
     ];
 
+    final width = MediaQuery.of(context).size.width;
+    final isTablet = width >= 600;
+    final topPad = (Platform.isIOS || Platform.isAndroid)
+        ? MediaQuery.of(context).padding.top + 8
+        : 10.0;
+
+    // ── Tablet layout: sidebar nav + content ──────────────────────────────
+    if (isTablet) {
+      return Scaffold(
+        backgroundColor: bg,
+        body: Row(children: [
+          // Left sidebar
+          Container(
+            width: 200,
+            color: surface2,
+            child: Column(children: [
+              SizedBox(height: topPad),
+              // Logo
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                child: Row(children: [
+                  Container(
+                    width: 36, height: 36,
+                    decoration: BoxDecoration(
+                      border: Border.all(color: accent, width: 2),
+                      borderRadius: BorderRadius.circular(9)),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(7),
+                      child: Image.asset('assets/icon.png', fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => Icon(Icons.show_chart, color: accent, size: 22)))),
+                  const SizedBox(width: 10),
+                  Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Text('Flowe', style: GoogleFonts.playfairDisplay(
+                      fontSize: 20, color: accent, fontWeight: FontWeight.w700, height: 1.1)),
+                    Text('PERSONAL FINANCE', style: GoogleFonts.dmMono(
+                      fontSize: 7, color: muted, letterSpacing: 1.5)),
+                  ]),
+                ]),
+              ),
+              Divider(color: border, height: 1),
+              const SizedBox(height: 8),
+              // Nav items
+              ...List.generate(_tabLabels.length, (i) {
+                final sel = i == widget.tab;
+                return GestureDetector(
+                  onTap: () => widget.onTabChange(i),
+                  child: Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: sel ? accent.withOpacity(0.12) : Colors.transparent,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: sel ? accent.withOpacity(0.4) : Colors.transparent)),
+                    child: Row(children: [
+                      Icon(_tabIcons[i], size: 16, color: sel ? accent : muted),
+                      const SizedBox(width: 10),
+                      Text(_tabLabels[i], style: GoogleFonts.dmMono(
+                        fontSize: 12, letterSpacing: 0.5,
+                        color: sel ? accent : muted,
+                        fontWeight: sel ? FontWeight.w600 : FontWeight.w400)),
+                    ]),
+                  ),
+                );
+              }),
+              const Spacer(),
+              // Settings at bottom of sidebar
+              Padding(
+                padding: EdgeInsets.fromLTRB(8, 0, 8,
+                  MediaQuery.of(context).padding.bottom + 12),
+                child: GestureDetector(
+                  onTap: () => _showSettings(context),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: border),
+                      borderRadius: BorderRadius.circular(8)),
+                    child: Row(children: [
+                      Icon(Icons.settings_outlined, color: muted, size: 16),
+                      const SizedBox(width: 10),
+                      Text('Settings', style: GoogleFonts.dmMono(
+                        color: muted, fontSize: 12)),
+                    ]),
+                  ),
+                ),
+              ),
+            ]),
+          ),
+          // Vertical divider
+          Container(width: 1, color: border),
+          // Main content
+          Expanded(child: screens[widget.tab]),
+        ]),
+      );
+    }
+
+    // ── Phone layout: top bar + bottom nav ────────────────────────────────
     return Scaffold(
       backgroundColor: bg,
       body: Column(children: [
@@ -246,12 +343,7 @@ class _FloShellState extends State<_FloShell> {
           color: surface2,
           child: Column(children: [
             Padding(
-              // Push down below status bar on mobile, minimal on desktop
-              padding: EdgeInsets.fromLTRB(16,
-                (Platform.isIOS || Platform.isAndroid)
-                  ? MediaQuery.of(context).padding.top + 8
-                  : 10,
-                16, 0),
+              padding: EdgeInsets.fromLTRB(16, topPad, 16, 0),
               child: Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
                 // Icon + Flowe wordmark
                 Container(
@@ -291,9 +383,7 @@ class _FloShellState extends State<_FloShell> {
                   decoration: BoxDecoration(border: Border(bottom: BorderSide(
                     color: sel ? accent : Colors.transparent, width: 2))),
                   child: Column(mainAxisSize: MainAxisSize.min, children: [
-                    Icon(_tabIcons[i],
-                      size: 16,
-                      color: sel ? accent : muted),
+                    Icon(_tabIcons[i], size: 16, color: sel ? accent : muted),
                     const SizedBox(height: 3),
                     Text(_tabLabels[i],
                       style: GoogleFonts.dmMono(
@@ -487,22 +577,22 @@ class _FloShellState extends State<_FloShell> {
             }),
           Divider(color: border),
 
-          // Check for update
-          ListTile(
-            leading: Icon(Icons.system_update_alt, color: muted),
-            title: Text('Check for Update', style: GoogleFonts.dmMono(color: txt, fontSize: 14)),
-            subtitle: Text('Opens latest release on GitHub',
-              style: GoogleFonts.dmMono(color: muted, fontSize: 10)),
-            onTap: () { Navigator.pop(ctx); _openUrl('https://github.com/thatspeedykid/flowe/releases/latest'); }),
-
-          // GitHub
-          ListTile(
-            leading: Icon(Icons.code, color: muted),
-            title: Text('GitHub', style: GoogleFonts.dmMono(color: txt, fontSize: 14)),
-            subtitle: Text('github.com/thatspeedykid/flowe',
-              style: GoogleFonts.dmMono(color: muted, fontSize: 10)),
-            onTap: () { Navigator.pop(ctx); _openUrl('https://github.com/thatspeedykid/flowe'); }),
-          Divider(color: border),
+          // Check for update + GitHub — desktop only
+          if (!Platform.isIOS && !Platform.isAndroid) ...[
+            ListTile(
+              leading: Icon(Icons.system_update_alt, color: muted),
+              title: Text('Check for Update', style: GoogleFonts.dmMono(color: txt, fontSize: 14)),
+              subtitle: Text('Opens latest release on GitHub',
+                style: GoogleFonts.dmMono(color: muted, fontSize: 10)),
+              onTap: () { Navigator.pop(ctx); _openUrl('https://github.com/thatspeedykid/flowe/releases/latest'); }),
+            ListTile(
+              leading: Icon(Icons.code, color: muted),
+              title: Text('GitHub', style: GoogleFonts.dmMono(color: txt, fontSize: 14)),
+              subtitle: Text('github.com/thatspeedykid/flowe',
+                style: GoogleFonts.dmMono(color: muted, fontSize: 10)),
+              onTap: () { Navigator.pop(ctx); _openUrl('https://github.com/thatspeedykid/flowe'); }),
+            Divider(color: border),
+          ],
 
           Padding(
             padding: const EdgeInsets.all(16),

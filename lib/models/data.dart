@@ -190,7 +190,7 @@ class FloData {
            required this.events, required this.darkMode, this.fontSize = 15.0});
 
   factory FloData.empty() => FloData(budgets: {}, debts: [], extraPayment: 0,
-    assets: [], liabilities: [], snapshots: [], events: [], darkMode: true);
+    assets: [], liabilities: [], snapshots: [], events: [], darkMode: false);
 
   Map<String, dynamic> toJson() => {
     'budgets':      budgets.map((k, v) => MapEntry(k, v.toJson())),
@@ -245,7 +245,7 @@ class FloData {
       liabilities:  liabilities,
       snapshots:    snapshots,
       events:       (j['events'] as List? ?? []).map((e) => Event.fromJson(e)).toList(),
-      darkMode:     j['darkMode'] ?? true,
+      darkMode:     j['darkMode'] ?? false,
       fontSize:     (j['fontSize'] ?? 15.0).toDouble(),
     );
   }
