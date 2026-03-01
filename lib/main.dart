@@ -303,7 +303,7 @@ class _FloShellState extends State<_FloShell> {
                 );
               }),
               const Spacer(),
-              // Settings at bottom of sidebar
+              // Settings at bottom of sidebar (tablet = mobile, no coffee)
               Padding(
                 padding: EdgeInsets.fromLTRB(8, 0, 8,
                   MediaQuery.of(context).padding.bottom + 12),
@@ -317,8 +317,7 @@ class _FloShellState extends State<_FloShell> {
                     child: Row(children: [
                       Icon(Icons.settings_outlined, color: muted, size: 16),
                       const SizedBox(width: 10),
-                      Text('Settings', style: GoogleFonts.dmMono(
-                        color: muted, fontSize: 12)),
+                      Text('Settings', style: GoogleFonts.dmMono(color: muted, fontSize: 12)),
                     ]),
                   ),
                 ),
@@ -401,17 +400,20 @@ class _FloShellState extends State<_FloShell> {
         // ── Screen ────────────────────────────────────────────────────────
         Expanded(child: screens[widget.tab]),
 
-        // ── Bottom bar — mobile only, settings button ─────────────────────
-        if (Platform.isIOS || Platform.isAndroid)
-          Container(
-            padding: EdgeInsets.only(
-              left: 16, right: 16, top: 6,
-              bottom: MediaQuery.of(context).padding.bottom + 6),
-            decoration: BoxDecoration(
-              color: surface2,
-              border: Border(top: BorderSide(color: border))),
-            child: Row(children: [
-              const Spacer(),
+        // ── Bottom bar ────────────────────────────────────────────────────
+        // Mobile: settings button | Desktop: buy me a coffee
+        Container(
+          padding: EdgeInsets.only(
+            left: 16, right: 16, top: 6,
+            bottom: (Platform.isIOS || Platform.isAndroid)
+                ? MediaQuery.of(context).padding.bottom + 6
+                : 6),
+          decoration: BoxDecoration(
+            color: surface2,
+            border: Border(top: BorderSide(color: border))),
+          child: Row(children: [
+            const Spacer(),
+            if (Platform.isIOS || Platform.isAndroid)
               GestureDetector(
                 onTap: () => _showSettings(context),
                 child: Container(
@@ -425,9 +427,25 @@ class _FloShellState extends State<_FloShell> {
                     Text('Settings',
                       style: GoogleFonts.dmMono(color: muted, fontSize: 11)),
                   ]),
+                ))
+            else
+              GestureDetector(
+                onTap: () => _openUrl('https://www.paypal.com/paypalme/speeddevilx'),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: dark ? const Color(0xFF1a2a0a) : const Color(0xFFe8f5c8),
+                    border: Border.all(color: accent.withOpacity(0.35)),
+                    borderRadius: BorderRadius.circular(20)),
+                  child: Row(mainAxisSize: MainAxisSize.min, children: [
+                    const Text('☕', style: TextStyle(fontSize: 12)),
+                    const SizedBox(width: 5),
+                    Text('Buy me a coffee',
+                      style: GoogleFonts.dmMono(color: accent, fontSize: 10)),
+                  ]),
                 )),
-            ]),
-          ),
+          ]),
+        ),
       ]),
     );
   }
