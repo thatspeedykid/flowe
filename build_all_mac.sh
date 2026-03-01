@@ -41,6 +41,9 @@ echo "[2/5] Setting up platforms and injecting icons..."
 flutter create --platforms=macos,ios . >/dev/null 2>&1 || true
 bash inject_icons.sh
 
+# Fix macOS entitlements (prevents blank window)
+bash macos_entitlements_fix.sh
+
 # iOS icon Contents.json — tells Xcode what each icon file is
 cat > "ios/Runner/Assets.xcassets/AppIcon.appiconset/Contents.json" << 'JSON'
 {
