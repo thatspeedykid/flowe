@@ -13,6 +13,13 @@ echo "  Output: $INSTALLERS"
 echo "=========================================="
 echo ""
 
+# ── Always pull latest code first ─────────────────────────────────────────────
+if [ -d ".git" ]; then
+  echo "[+] Pulling latest code from GitHub..."
+  git pull --ff-only 2>/dev/null && echo "  [OK] Up to date" || echo "  [WARN] Could not pull (offline or no remote)"
+  echo ""
+fi
+
 # ── Checks ────────────────────────────────────────────────────────────────────
 if ! command -v flutter &>/dev/null; then
   echo "[ERROR] Flutter not found. brew install --cask flutter"

@@ -265,7 +265,7 @@ class _FloShellState extends State<_FloShell> {
                       borderRadius: BorderRadius.circular(9)),
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(7),
-                      child: Image.asset('assets/icon.png', fit: BoxFit.cover,
+                      child: Image.asset(dark ? 'assets/icon_dark.png' : 'assets/icon.png', fit: BoxFit.cover,
                         errorBuilder: (_, __, ___) => Icon(Icons.show_chart, color: accent, size: 22)))),
                   const SizedBox(width: 10),
                   Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -353,7 +353,7 @@ class _FloShellState extends State<_FloShell> {
                     borderRadius: BorderRadius.circular(8)),
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(6),
-                    child: Image.asset('assets/icon.png', fit: BoxFit.cover,
+                    child: Image.asset(dark ? 'assets/icon_dark.png' : 'assets/icon.png', fit: BoxFit.cover,
                       errorBuilder: (_, __, ___) => Icon(Icons.show_chart, color: accent, size: 20)))),
                 const SizedBox(width: 8),
                 Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
