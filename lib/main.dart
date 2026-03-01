@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:path_provider/path_provider.dart';
 import 'models/data.dart';
@@ -11,6 +12,10 @@ import 'screens/events_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // Fix blank window on macOS VMware/VirtualBox — disable impeller
+  if (Platform.isMacOS) {
+    await SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual, overlays: []);
+  }
   final data = await FloStorage.load();
   runApp(FloApp(initialData: data));
 }

@@ -40,6 +40,19 @@ echo ""
 echo "[2/5] Setting up platforms and injecting icons..."
 flutter create --platforms=macos,ios . >/dev/null 2>&1 || true
 
+# Disable Impeller (fixes blank window on VMware/VirtualBox macOS)
+if [ -f "macos/Runner/Info.plist" ]; then
+  python3 -c "
+import plistlib
+with open('macos/Runner/Info.plist','rb') as f:
+    p = plistlib.load(f)
+p['FLTEnableImpeller'] = False
+with open('macos/Runner/Info.plist','wb') as f:
+    plistlib.dump(p, f)
+print('[OK] Impeller disabled in Info.plist')
+"
+fi
+
 # Allow entitlements modification in Xcode project settings
 if [ -f "macos/Runner.xcodeproj/project.pbxproj" ]; then
   sed -i '' 's/CODE_SIGN_STYLE = Automatic;/CODE_SIGN_STYLE = Automatic;
