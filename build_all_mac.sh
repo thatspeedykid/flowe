@@ -10,7 +10,9 @@ echo "  macOS App + iOS IPA"
 echo "=========================================="
 echo ""
 
-mkdir -p installers
+mkdir -p "$HOME/Documents/flo-builds"
+INSTALLERS="$HOME/Documents/flo-builds"
+echo "[+] Output folder: $HOME/Documents/flo-builds/"
 
 # ── Checks ────────────────────────────────────────────────────────────────────
 if ! command -v flutter &>/dev/null; then
@@ -101,14 +103,14 @@ if [ -d "build/macos/Build/Products/Release/flo.app" ]; then
       --icon "flo.app" 150 185 \
       --hide-extension "flo.app" \
       --app-drop-link 450 185 \
-      "installers/flo_${VERSION}.dmg" \
+      "$INSTALLERS/flo_${VERSION}.dmg" \
       "build/macos/Build/Products/Release/flo.app"
-    echo "[OK] macOS DMG: installers/flo_${VERSION}.dmg"
+    echo "[OK] macOS DMG: $INSTALLERS/flo_${VERSION}.dmg"
   else
     cd build/macos/Build/Products/Release
-    zip -r "$SCRIPT_DIR/installers/flo_${VERSION}_macos.zip" flo.app -q
+    zip -r "$SCRIPT_DIR/$INSTALLERS/flo_${VERSION}_macos.zip" flo.app -q
     cd "$SCRIPT_DIR"
-    echo "[OK] macOS ZIP: installers/flo_${VERSION}_macos.zip"
+    echo "[OK] macOS ZIP: $INSTALLERS/flo_${VERSION}_macos.zip"
     echo "     Tip: brew install create-dmg for a proper .dmg next time"
   fi
 else
@@ -118,16 +120,23 @@ echo ""
 
 # ── Step 4: iOS IPA ───────────────────────────────────────────────────────────
 echo "[4/5] Building iOS release..."
+
+# Check iOS platform is installed
+INSTALLED=$(xcodebuild -showsdks 2>/dev/null | grep iphoneos | tail -1)
+if [ -z "$INSTALLED" ]; then
+  echo "[INFO] iOS platform not installed - downloading now (~2GB)..."
+  xcodebuild -downloadPlatform iOS
+fi
 flutter build ios --release --no-codesign
 if [ -d "build/ios/iphoneos/Runner.app" ]; then
   # Package as IPA manually
   mkdir -p /tmp/flo_ipa/Payload
   cp -r build/ios/iphoneos/Runner.app /tmp/flo_ipa/Payload/flo.app
   cd /tmp/flo_ipa
-  zip -r "$SCRIPT_DIR/installers/flo_${VERSION}.ipa" Payload -q
+  zip -r "$SCRIPT_DIR/$INSTALLERS/flo_${VERSION}.ipa" Payload -q
   cd "$SCRIPT_DIR"
   rm -rf /tmp/flo_ipa
-  echo "[OK] iOS IPA: installers/flo_${VERSION}.ipa"
+  echo "[OK] iOS IPA: $INSTALLERS/flo_${VERSION}.ipa"
   echo "     Install: AltStore or Sideloadly (no developer account needed)"
 else
   echo "[ERROR] iOS build failed"
@@ -140,9 +149,12 @@ echo ""
 echo "=========================================="
 echo "  Build Summary  ->  installers/"
 echo "=========================================="
-[ -f "installers/flo_${VERSION}.dmg"          ] && echo "[OK] macOS DMG:   installers/flo_${VERSION}.dmg"
-[ -f "installers/flo_${VERSION}_macos.zip"    ] && echo "[OK] macOS ZIP:   installers/flo_${VERSION}_macos.zip"
-[ -f "installers/flo_${VERSION}.ipa"          ] && echo "[OK] iOS IPA:     installers/flo_${VERSION}.ipa"
+[ -f "$INSTALLERS/flo_${VERSION}.dmg"          ] && echo "[OK] macOS DMG:   $INSTALLERS/flo_${VERSION}.dmg"
+[ -f "$INSTALLERS/flo_${VERSION}_macos.zip"    ] && echo "[OK] macOS ZIP:   $INSTALLERS/flo_${VERSION}_macos.zip"
+[ -f "$INSTALLERS/flo_${VERSION}.ipa"          ] && echo "[OK] iOS IPA:     $INSTALLERS/flo_${VERSION}.ipa"
+echo ""
+echo ""
+echo "  Files saved to: ~/Documents/flo-builds/"
 echo ""
 echo "  To install IPA without Apple account:"
 echo "  → AltStore:   https://altstore.io"
