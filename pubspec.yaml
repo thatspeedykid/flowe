@@ -10,7 +10,8 @@ dependencies:
     sdk: flutter
   google_fonts: ^6.1.0
   path_provider: ^2.1.2
-  file_selector: ^1.0.3
+  file_selector: 1.0.3
+  objective_c: ^6.0.2
 
 dev_dependencies:
   flutter_test:
