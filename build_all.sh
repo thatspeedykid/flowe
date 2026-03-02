@@ -31,6 +31,17 @@ echo ""
 
 # ── Step 3: Linux build ────────────────────────────────────────────────────────
 echo "[3/4] Building Linux release..."
+
+# Fix missing linker — Flutter needs lld or ld, install if missing
+if ! command -v ld &>/dev/null && ! command -v ld.lld &>/dev/null; then
+  echo "  [FIX] Linker not found — installing..."
+  sudo apt install -y binutils lld 2>/dev/null || true
+fi
+# If llvm-18 is installed but ld not symlinked, fix it
+if [ -f "/usr/lib/llvm-18/bin/ld.lld" ] && ! command -v ld.lld &>/dev/null; then
+  sudo ln -sf /usr/lib/llvm-18/bin/ld.lld /usr/local/bin/ld.lld 2>/dev/null || true
+fi
+
 flutter build linux --release
 echo "[OK] Linux build done."
 echo ""

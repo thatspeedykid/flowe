@@ -91,14 +91,46 @@ class _BudgetScreenState extends State<BudgetScreen> {
 
     try {
       if (Platform.isIOS || Platform.isAndroid) {
-        // Mobile: share sheet — user picks Files, Drive, AirDrop etc.
-        final tmp = await getTemporaryDirectory();
-        final file = File('${tmp.path}/$filename');
-        await file.writeAsString(csv);
-        await Share.shareXFiles(
-          [XFile(file.path, mimeType: 'text/csv')],
-          subject: 'Flowe Budget — $_key',
+        final dark = widget.data.darkMode;
+        final accent = dark ? const Color(0xFFc8f560) : const Color(0xFF5a8a00);
+        final choice = await showDialog<String>(
+          context: context,
+          builder: (c) => AlertDialog(
+            backgroundColor: dark ? const Color(0xFF1a1a1a) : Colors.white,
+            title: Text('Export CSV', style: GoogleFonts.dmMono(
+              color: dark ? const Color(0xFFe8e8e8) : const Color(0xFF1c1a17))),
+            content: Text('Where do you want to save your budget?',
+              style: GoogleFonts.dmMono(
+                color: dark ? const Color(0xFF999999) : const Color(0xFF777777),
+                fontSize: 13)),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(c, 'local'),
+                child: Text('📥  Save to Downloads',
+                  style: GoogleFonts.dmMono(color: accent))),
+              TextButton(
+                onPressed: () => Navigator.pop(c, 'share'),
+                child: Text('📤  Share with another device',
+                  style: GoogleFonts.dmMono(color: accent))),
+              TextButton(
+                onPressed: () => Navigator.pop(c),
+                child: Text('Cancel',
+                  style: GoogleFonts.dmMono(color: const Color(0xFF777777)))),
+            ],
+          ),
         );
+        if (choice == null) return;
+        final docsDir = await getApplicationDocumentsDirectory();
+        final file = File('${docsDir.path}/$filename');
+        await file.writeAsString(csv);
+        if (choice == 'share') {
+          await Share.shareXFiles(
+            [XFile(file.path, mimeType: 'text/csv')],
+            subject: 'Flowe Budget — $_key',
+          );
+        } else {
+          _showToast('Saved as $filename — find it in the Files app');
+        }
       } else {
         // Desktop: native save dialog
         final location = await getSaveLocation(
