@@ -456,17 +456,29 @@ class _FloShellState extends State<_FloShell> {
                 final json = jsonEncode(_cur.toJson());
                 final filename = 'flowe_backup.json';
 
-                // All platforms: native save dialog
-                final location = await getSaveLocation(
-                  suggestedName: filename,
-                  acceptedTypeGroups: [const XTypeGroup(label: 'JSON')],
-                );
-                if (location == null) return;
-                await File(location.path).writeAsString(json);
-                if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                  content: Text('Saved to ${location.path}',
-                    style: GoogleFonts.dmMono(color: const Color(0xFF0f0f0f))),
-                  backgroundColor: accent, duration: const Duration(seconds: 3)));
+                if (Platform.isIOS || Platform.isAndroid) {
+                  // Mobile: save to Documents folder (visible in Files app)
+                  final docsDir = await getApplicationDocumentsDirectory();
+                  final file = File('${docsDir.path}/$filename');
+                  await file.writeAsString(json);
+                  // Also share so user can move it anywhere they want
+                  await Share.shareXFiles(
+                    [XFile(file.path, mimeType: 'application/json')],
+                    subject: 'Flowe Backup',
+                  );
+                } else {
+                  // Desktop: native file save dialog
+                  final location = await getSaveLocation(
+                    suggestedName: filename,
+                    acceptedTypeGroups: [const XTypeGroup(label: 'JSON')],
+                  );
+                  if (location == null) return;
+                  await File(location.path).writeAsString(json);
+                  if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                    content: Text('Saved to ${location.path}',
+                      style: GoogleFonts.dmMono(color: const Color(0xFF0f0f0f))),
+                    backgroundColor: accent, duration: const Duration(seconds: 3)));
+                }
               } catch (e) {
                 if (mounted) ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(content: Text('Export failed: $e')));
@@ -483,7 +495,7 @@ class _FloShellState extends State<_FloShell> {
               Navigator.pop(ctx);
               try {
                 final file = await openFile(
-                  acceptedTypeGroups: [const XTypeGroup(label: 'JSON')],
+                  acceptedTypeGroups: [const XTypeGroup(label: 'All', uniformTypeIdentifiers: ['public.item'])],
                 );
                 if (file == null) return;
                 final content = await file.readAsString();

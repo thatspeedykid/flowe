@@ -1,7 +1,9 @@
 import 'dart:io';
+import 'package:path_provider/path_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:file_selector/file_selector.dart';
 import '../models/data.dart';
 
@@ -88,14 +90,25 @@ class _BudgetScreenState extends State<BudgetScreen> {
     final filename = 'flowe_budget_$_key.csv';
 
     try {
-      // All platforms: native save dialog
-      final location = await getSaveLocation(
-        suggestedName: filename,
-        acceptedTypeGroups: [const XTypeGroup(label: 'CSV')],
-      );
-      if (location == null) return;
-      await File(location.path).writeAsString(csv);
-      _showToast('Saved to ${location.path}');
+      if (Platform.isIOS || Platform.isAndroid) {
+        // Mobile: save to Documents then share so user can move it
+        final docsDir = await getApplicationDocumentsDirectory();
+        final file = File('${docsDir.path}/$filename');
+        await file.writeAsString(csv);
+        await Share.shareXFiles(
+          [XFile(file.path, mimeType: 'text/csv')],
+          subject: 'Flowe Budget — $_key',
+        );
+      } else {
+        // Desktop: native save dialog
+        final location = await getSaveLocation(
+          suggestedName: filename,
+          acceptedTypeGroups: [const XTypeGroup(label: 'CSV')],
+        );
+        if (location == null) return;
+        await File(location.path).writeAsString(csv);
+        _showToast('Saved to ${location.path}');
+      }
     } catch (e) {
       _showToast('Export failed: $e');
     }

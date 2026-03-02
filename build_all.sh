@@ -44,6 +44,9 @@ if [ -f "/usr/lib/llvm-18/bin/ld.lld" ] && ! command -v ld.lld &>/dev/null; then
   sudo ln -sf /usr/lib/llvm-18/bin/ld.lld /usr/local/bin/ld.lld 2>/dev/null || true
 fi
 
+# Flutter CMake bug — needs this folder to exist before build
+mkdir -p build/native_assets/linux
+
 flutter build linux --release
 echo "[OK] Linux build done."
 echo ""
