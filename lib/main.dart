@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:file_selector/file_selector.dart';
 import 'models/data.dart';
 import 'screens/budget_screen.dart';
 import 'screens/snowball_screen.dart';
@@ -107,111 +109,6 @@ class _FloShellState extends State<_FloShell> {
   }
 
   // ── File picker (cross-platform, no dependency needed) ───────────────────
-  Future<String?> _pickSavePath(BuildContext ctx, String filename) async {
-    final ctrl = TextEditingController();
-    // Default path
-    final home = Platform.environment['HOME'] ??
-        Platform.environment['USERPROFILE'] ?? '';
-    final sep = Platform.isWindows ? '\\' : '/';
-    ctrl.text = '$home${sep}$filename';
-
-    return showDialog<String>(
-      context: ctx,
-      builder: (c) => AlertDialog(
-        backgroundColor: _cur.darkMode ? const Color(0xFF1a1a1a) : Colors.white,
-        title: Text('Save as', style: GoogleFonts.dmMono(
-          color: _cur.darkMode ? const Color(0xFFe8e8e8) : const Color(0xFF1c1a17))),
-        content: TextField(
-          controller: ctrl,
-          autofocus: true,
-          style: GoogleFonts.dmMono(
-            color: _cur.darkMode ? const Color(0xFFe8e8e8) : const Color(0xFF1c1a17),
-            fontSize: 13),
-          decoration: InputDecoration(
-            hintText: 'Full path to save file',
-            hintStyle: GoogleFonts.dmMono(color: const Color(0xFF777777), fontSize: 13),
-            enabledBorder: OutlineInputBorder(borderSide: BorderSide(
-              color: _cur.darkMode ? const Color(0xFF3a3a3a) : const Color(0xFFd4cfc6))),
-            focusedBorder: OutlineInputBorder(borderSide: BorderSide(
-              color: _cur.darkMode ? const Color(0xFFc8f560) : const Color(0xFF5a8a00))),
-          ),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(c), child: Text('Cancel',
-            style: GoogleFonts.dmMono(color: const Color(0xFF777777)))),
-          TextButton(onPressed: () => Navigator.pop(c, ctrl.text.trim()),
-            child: Text('Save', style: GoogleFonts.dmMono(
-              color: _cur.darkMode ? const Color(0xFFc8f560) : const Color(0xFF5a8a00)))),
-        ],
-      ),
-    );
-  }
-
-  Future<String?> _pickOpenPath(BuildContext ctx, String defaultFile) async {
-    final ctrl = TextEditingController();
-    final home = Platform.environment['HOME'] ??
-        Platform.environment['USERPROFILE'] ?? '';
-    final sep = Platform.isWindows ? '\\' : '/';
-    ctrl.text = '$home${sep}$defaultFile';
-
-    // Suggest known locations
-    final suggestions = Platform.isWindows ? [
-      '${Platform.environment['APPDATA'] ?? ''}\\flowe\\data.json',
-      '${home}\\flowe_backup.json',
-    ] : [
-      '$home/.local/share/flowe/data.json',
-      '${home}/flowe_backup.json',
-    ];
-
-    return showDialog<String>(
-      context: ctx,
-      builder: (c) => AlertDialog(
-        backgroundColor: _cur.darkMode ? const Color(0xFF1a1a1a) : Colors.white,
-        title: Text('Open file', style: GoogleFonts.dmMono(
-          color: _cur.darkMode ? const Color(0xFFe8e8e8) : const Color(0xFF1c1a17))),
-        content: Column(mainAxisSize: MainAxisSize.min, children: [
-          TextField(
-            controller: ctrl,
-            autofocus: true,
-            style: GoogleFonts.dmMono(
-              color: _cur.darkMode ? const Color(0xFFe8e8e8) : const Color(0xFF1c1a17),
-              fontSize: 13),
-            decoration: InputDecoration(
-              hintText: 'Full path to file',
-              hintStyle: GoogleFonts.dmMono(color: const Color(0xFF777777), fontSize: 13),
-              enabledBorder: OutlineInputBorder(borderSide: BorderSide(
-                color: _cur.darkMode ? const Color(0xFF3a3a3a) : const Color(0xFFd4cfc6))),
-              focusedBorder: OutlineInputBorder(borderSide: BorderSide(
-                color: _cur.darkMode ? const Color(0xFFc8f560) : const Color(0xFF5a8a00))),
-            ),
-          ),
-          const SizedBox(height: 12),
-          // Quick-select known paths
-          ...suggestions.map((p) => InkWell(
-            onTap: () => ctrl.text = p,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 4),
-              child: Row(children: [
-                Icon(Icons.folder_open, size: 14, color: const Color(0xFF777777)),
-                const SizedBox(width: 6),
-                Expanded(child: Text(p, style: GoogleFonts.dmMono(
-                  color: const Color(0xFF777777), fontSize: 10),
-                  overflow: TextOverflow.ellipsis)),
-              ]),
-            ),
-          )),
-        ]),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(c), child: Text('Cancel',
-            style: GoogleFonts.dmMono(color: const Color(0xFF777777)))),
-          TextButton(onPressed: () => Navigator.pop(c, ctrl.text.trim()),
-            child: Text('Open', style: GoogleFonts.dmMono(
-              color: _cur.darkMode ? const Color(0xFFc8f560) : const Color(0xFF5a8a00)))),
-        ],
-      ),
-    );
-  }
-
   // ── Tab icons ─────────────────────────────────────────────────────────────
   static const _tabIcons = [
     Icons.account_balance_wallet_outlined,
@@ -551,7 +448,10 @@ class _FloShellState extends State<_FloShell> {
           ListTile(
             leading: Icon(Icons.upload_file, color: muted),
             title: Text('Export Backup', style: GoogleFonts.dmMono(color: txt, fontSize: 14)),
-            subtitle: Text('Saves to Downloads — or share via AirDrop, Drive, etc.',
+            subtitle: Text(
+              (Platform.isIOS || Platform.isAndroid)
+                ? 'Share to Files, iCloud, Drive, AirDrop...'
+                : 'Choose where to save your backup',
               style: GoogleFonts.dmMono(color: muted, fontSize: 10)),
             onTap: () async {
               Navigator.pop(ctx);
@@ -559,28 +459,31 @@ class _FloShellState extends State<_FloShell> {
                 final json = jsonEncode(_cur.toJson());
                 final filename = 'flowe_backup.json';
 
-                // All platforms: save to Downloads folder first, then share
-                String downloadsPath;
-                if (Platform.isWindows) {
-                  downloadsPath = '${Platform.environment['USERPROFILE']}\\Downloads';
-                } else if (Platform.isMacOS || Platform.isLinux) {
-                  downloadsPath = Platform.environment['XDG_DOWNLOAD_DIR'] ??
-                      '${Platform.environment['HOME']}/Downloads';
-                } else {
-                  // iOS/Android: use temp dir then share (no direct Downloads access)
+                if (Platform.isIOS || Platform.isAndroid) {
+                  // Mobile: write to temp then share sheet
+                  // User can save to Files app, iCloud, Google Drive, AirDrop etc.
                   final tmp = await getTemporaryDirectory();
-                  downloadsPath = tmp.path;
+                  final file = File('${tmp.path}/$filename');
+                  await file.writeAsString(json);
+                  await Share.shareXFiles(
+                    [XFile(file.path, mimeType: 'application/json')],
+                    subject: 'Flowe Backup',
+                  );
+                } else {
+                  // Desktop: native file save dialog
+                  final path = await getSavePath(
+                    suggestedName: filename,
+                    acceptedTypeGroups: [
+                      const XTypeGroup(label: 'JSON', extensions: ['json']),
+                    ],
+                  );
+                  if (path == null) return; // user cancelled
+                  await File(path).writeAsString(json);
+                  if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                    content: Text('Saved to $path',
+                      style: GoogleFonts.dmMono(color: const Color(0xFF0f0f0f))),
+                    backgroundColor: accent, duration: const Duration(seconds: 3)));
                 }
-
-                final dir = Directory(downloadsPath);
-                if (!await dir.exists()) await dir.create(recursive: true);
-                final path = '$downloadsPath/$filename';
-                await File(path).writeAsString(json);
-
-                if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                  content: Text('Saved to Downloads/$filename',
-                    style: GoogleFonts.dmMono(color: const Color(0xFF0f0f0f))),
-                  backgroundColor: accent, duration: const Duration(seconds: 3)));
               } catch (e) {
                 if (mounted) ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(content: Text('Export failed: $e')));
@@ -591,24 +494,40 @@ class _FloShellState extends State<_FloShell> {
           ListTile(
             leading: Icon(Icons.download, color: muted),
             title: Text('Import Backup', style: GoogleFonts.dmMono(color: txt, fontSize: 14)),
-            subtitle: Text('Choose a flowe_backup.json or data.json file',
+            subtitle: Text(
+              (Platform.isIOS || Platform.isAndroid)
+                ? 'Pick a flowe_backup.json from Files or Drive'
+                : 'Browse for a flowe_backup.json file',
               style: GoogleFonts.dmMono(color: muted, fontSize: 10)),
             onTap: () async {
               Navigator.pop(ctx);
-              final path = await _pickOpenPath(context, 'flowe_backup.json');
-              if (path == null || path.isEmpty) return;
-              final file = File(path);
-              if (!await file.exists()) {
-                if (mounted) ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('File not found: $path',
-                    style: GoogleFonts.dmMono())));
-                return;
-              }
               try {
-                final imported = FloData.fromJson(jsonDecode(await file.readAsString()));
+                String? content;
+
+                if (Platform.isIOS || Platform.isAndroid) {
+                  // Mobile: file picker from Files app / Drive
+                  final file = await openFile(
+                    acceptedTypeGroups: [
+                      const XTypeGroup(label: 'JSON', extensions: ['json']),
+                    ],
+                  );
+                  if (file == null) return;
+                  content = await file.readAsString();
+                } else {
+                  // Desktop: native file open dialog
+                  final file = await openFile(
+                    acceptedTypeGroups: [
+                      const XTypeGroup(label: 'JSON', extensions: ['json']),
+                    ],
+                  );
+                  if (file == null) return;
+                  content = await file.readAsString();
+                }
+
+                final imported = FloData.fromJson(jsonDecode(content));
                 _save(imported);
                 if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                  content: Text('Imported from $path',
+                  content: Text('Backup imported successfully',
                     style: GoogleFonts.dmMono(color: const Color(0xFF0f0f0f))),
                   backgroundColor: accent));
               } catch (e) {

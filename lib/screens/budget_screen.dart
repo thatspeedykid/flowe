@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:file_selector/file_selector.dart';
 import '../models/data.dart';
 
 class BudgetScreen extends StatefulWidget {
@@ -88,24 +90,27 @@ class _BudgetScreenState extends State<BudgetScreen> {
     final filename = 'flowe_budget_$_key.csv';
 
     try {
-      // Get Downloads path per platform
-      String downloadsPath;
-      if (Platform.isWindows) {
-        downloadsPath = '${Platform.environment['USERPROFILE']}\\Downloads';
-      } else if (Platform.isMacOS || Platform.isLinux) {
-        downloadsPath = Platform.environment['XDG_DOWNLOAD_DIR'] ??
-            '${Platform.environment['HOME']}/Downloads';
+      if (Platform.isIOS || Platform.isAndroid) {
+        // Mobile: share sheet — user picks Files, Drive, AirDrop etc.
+        final tmp = await getTemporaryDirectory();
+        final file = File('${tmp.path}/$filename');
+        await file.writeAsString(csv);
+        await Share.shareXFiles(
+          [XFile(file.path, mimeType: 'text/csv')],
+          subject: 'Flowe Budget — $_key',
+        );
       } else {
-        // iOS/Android: Documents folder
-        final docsDir = await getApplicationDocumentsDirectory();
-        downloadsPath = docsDir.path;
+        // Desktop: native save dialog
+        final path = await getSavePath(
+          suggestedName: filename,
+          acceptedTypeGroups: [
+            const XTypeGroup(label: 'CSV', extensions: ['csv']),
+          ],
+        );
+        if (path == null) return;
+        await File(path).writeAsString(csv);
+        _showToast('Saved to $path');
       }
-
-      final dir = Directory(downloadsPath);
-      if (!await dir.exists()) await dir.create(recursive: true);
-      final file = File('$downloadsPath/$filename');
-      await file.writeAsString(csv);
-      _showToast('Saved to Downloads/$filename');
     } catch (e) {
       _showToast('Export failed: $e');
     }
