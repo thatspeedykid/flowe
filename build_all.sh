@@ -26,6 +26,8 @@ echo ""
 # ── Step 2: Platform setup + icons ────────────────────────────────────────────
 echo "[2/4] Setting up platforms and injecting icons..."
 flutter create --platforms=linux,android . >/dev/null 2>&1 || true
+# Fix window title in Linux runner
+[ -f "linux/runner/main.cc" ] && sed -i 's/"flowe"/"Flowe"/g' linux/runner/main.cc
 bash inject_icons.sh
 echo ""
 

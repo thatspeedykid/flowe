@@ -2,8 +2,6 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:share_plus/share_plus.dart';
 import 'package:file_selector/file_selector.dart';
 import '../models/data.dart';
 
@@ -90,59 +88,14 @@ class _BudgetScreenState extends State<BudgetScreen> {
     final filename = 'flowe_budget_$_key.csv';
 
     try {
-      if (Platform.isIOS || Platform.isAndroid) {
-        final dark = widget.data.darkMode;
-        final accent = dark ? const Color(0xFFc8f560) : const Color(0xFF5a8a00);
-        final choice = await showDialog<String>(
-          context: context,
-          builder: (c) => AlertDialog(
-            backgroundColor: dark ? const Color(0xFF1a1a1a) : Colors.white,
-            title: Text('Export CSV', style: GoogleFonts.dmMono(
-              color: dark ? const Color(0xFFe8e8e8) : const Color(0xFF1c1a17))),
-            content: Text('Where do you want to save your budget?',
-              style: GoogleFonts.dmMono(
-                color: dark ? const Color(0xFF999999) : const Color(0xFF777777),
-                fontSize: 13)),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(c, 'local'),
-                child: Text('📥  Save to Downloads',
-                  style: GoogleFonts.dmMono(color: accent))),
-              TextButton(
-                onPressed: () => Navigator.pop(c, 'share'),
-                child: Text('📤  Share with another device',
-                  style: GoogleFonts.dmMono(color: accent))),
-              TextButton(
-                onPressed: () => Navigator.pop(c),
-                child: Text('Cancel',
-                  style: GoogleFonts.dmMono(color: const Color(0xFF777777)))),
-            ],
-          ),
-        );
-        if (choice == null) return;
-        final docsDir = await getApplicationDocumentsDirectory();
-        final file = File('${docsDir.path}/$filename');
-        await file.writeAsString(csv);
-        if (choice == 'share') {
-          await Share.shareXFiles(
-            [XFile(file.path, mimeType: 'text/csv')],
-            subject: 'Flowe Budget — $_key',
-          );
-        } else {
-          _showToast('Saved as $filename — find it in the Files app');
-        }
-      } else {
-        // Desktop: native save dialog
-        final location = await getSaveLocation(
-          suggestedName: filename,
-          acceptedTypeGroups: [
-            const XTypeGroup(label: 'CSV', extensions: ['csv']),
-          ],
-        );
-        if (location == null) return;
-        await File(location.path).writeAsString(csv);
-        _showToast('Saved to ${location.path}');
-      }
+      // All platforms: native save dialog
+      final location = await getSaveLocation(
+        suggestedName: filename,
+        acceptedTypeGroups: [const XTypeGroup(label: 'CSV')],
+      );
+      if (location == null) return;
+      await File(location.path).writeAsString(csv);
+      _showToast('Saved to ${location.path}');
     } catch (e) {
       _showToast('Export failed: $e');
     }

@@ -42,6 +42,9 @@ echo ""
 # ── Step 2: Platform setup + icons ───────────────────────────────────────────
 echo "[2/5] Setting up platforms and injecting icons..."
 flutter create --platforms=macos,ios . >/dev/null 2>&1 || true
+# Fix window title in macOS/iOS runner
+[ -f "macos/Runner/AppInfo.xcconfig" ] && sed -i '' 's/PRODUCT_NAME = flowe/PRODUCT_NAME = Flowe/g' macos/Runner/AppInfo.xcconfig || true
+[ -f "ios/Runner/AppInfo.xcconfig" ] && sed -i '' 's/PRODUCT_NAME = flowe/PRODUCT_NAME = Flowe/g' ios/Runner/AppInfo.xcconfig || true
 
 # Disable Impeller (fixes blank window on VMware macOS)
 if [ -f "macos/Runner/Info.plist" ]; then

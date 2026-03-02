@@ -28,6 +28,13 @@ echo.
 :: ── Step 2: Platform setup + icon injection ───────────────────────────────────
 echo [2/5] Setting up platforms and injecting icons...
 call flutter create --platforms=windows,android . >nul 2>&1
+:: Fix window title in Windows runner
+if exist "windows\runner\Runner.rc" (
+    powershell -Command "(gc 'windows\runner\Runner.rc') -replace 'flowe', 'Flowe' | sc 'windows\runner\Runner.rc'"
+)
+if exist "windows\runner\main.cpp" (
+    powershell -Command "(gc 'windows\runner\main.cpp') -replace '\"flowe\"', '\"Flowe\"' | sc 'windows\runner\main.cpp'"
+)
 call inject_icons.bat
 echo.
 
