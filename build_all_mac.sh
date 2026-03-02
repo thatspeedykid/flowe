@@ -149,6 +149,7 @@ echo ""
 
 # ── Step 3: macOS app ─────────────────────────────────────────────────────────
 echo "[3/5] Building macOS app..."
+mkdir -p build/native_assets/macos
 flutter build macos --release
 
 MACOS_APP="build/macos/Build/Products/Release/flowe.app"
@@ -178,6 +179,7 @@ echo ""
 
 # ── Step 4: iOS IPA ───────────────────────────────────────────────────────────
 echo "[4/5] Building iOS release..."
+mkdir -p build/native_assets/ios
 INSTALLED=$(xcodebuild -showsdks 2>/dev/null | grep iphoneos | tail -1)
 if [ -z "$INSTALLED" ]; then
   echo "[INFO] iOS platform not installed - downloading now (~2GB)..."
