@@ -3,7 +3,6 @@ import 'package:path_provider/path_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:share_plus/share_plus.dart';
 import 'package:file_selector/file_selector.dart';
 import '../models/data.dart';
 
@@ -91,19 +90,24 @@ class _BudgetScreenState extends State<BudgetScreen> {
 
     try {
       if (Platform.isIOS || Platform.isAndroid) {
-        // Mobile: save to Documents then share so user can move it
-        final docsDir = await getApplicationDocumentsDirectory();
-        final file = File('${docsDir.path}/$filename');
+        // Android: save to Downloads folder
+        // iOS: save to app Documents (visible in Files app)
+        final dir = Platform.isAndroid
+            ? Directory('/storage/emulated/0/Download')
+            : await getApplicationDocumentsDirectory();
+        final saveDir = (Platform.isAndroid && await (dir as Directory).exists())
+            ? dir
+            : await getApplicationDocumentsDirectory();
+        final file = File('${saveDir.path}/$filename');
         await file.writeAsString(csv);
-        await Share.shareXFiles(
-          [XFile(file.path, mimeType: 'text/csv')],
-          subject: 'Flowe Budget — $_key',
-        );
+        _showToast(Platform.isAndroid
+            ? 'Saved to Downloads/$filename'
+            : 'Saved — find it in Files app under On My iPhone');
       } else {
         // Desktop: native save dialog
         final location = await getSaveLocation(
           suggestedName: filename,
-          acceptedTypeGroups: [const XTypeGroup(label: 'CSV')],
+          acceptedTypeGroups: [const XTypeGroup(label: 'CSV', extensions: ['csv'])],
         );
         if (location == null) return;
         await File(location.path).writeAsString(csv);

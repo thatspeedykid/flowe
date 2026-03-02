@@ -63,50 +63,54 @@ echo ""
 
 # ── Package DEB ───────────────────────────────────────────────────────────────
 echo "[+] Packaging Linux .deb..."
-DEB_DIR="/tmp/flo_deb"
+DEB_DIR="/tmp/flowe_deb"
 rm -rf "$DEB_DIR"
-mkdir -p "$DEB_DIR/DEBIAN" "$DEB_DIR/usr/bin" "$DEB_DIR/usr/lib/flo" \
-  "$DEB_DIR/usr/share/applications" "$DEB_DIR/usr/share/doc/flo"
+mkdir -p "$DEB_DIR/DEBIAN" "$DEB_DIR/usr/bin" "$DEB_DIR/usr/lib/flowe" \
+  "$DEB_DIR/usr/share/applications" "$DEB_DIR/usr/share/doc/flowe"
 for sz in 16 32 48 64 128 256 512; do
   mkdir -p "$DEB_DIR/usr/share/icons/hicolor/${sz}x${sz}/apps"
 done
 
-cp -r build/linux/x64/release/bundle/* "$DEB_DIR/usr/lib/flo/"
-cat > "$DEB_DIR/usr/bin/flo" << 'LAUNCH'
+cp -r build/linux/x64/release/bundle/* "$DEB_DIR/usr/lib/flowe/"
+
+# The Flutter binary may be named 'flo' — rename to 'flowe'
+[ -f "$DEB_DIR/usr/lib/flowe/flo" ] && mv "$DEB_DIR/usr/lib/flowe/flo" "$DEB_DIR/usr/lib/flowe/flowe"
+
+cat > "$DEB_DIR/usr/bin/flowe" << 'LAUNCH'
 #!/bin/bash
-cd /usr/lib/flo && exec ./flo "$@"
+cd /usr/lib/flowe && exec ./flowe "$@"
 LAUNCH
-chmod +x "$DEB_DIR/usr/bin/flo"
+chmod +x "$DEB_DIR/usr/bin/flowe"
 
 for sz in 16 32 48 64 128 256 512; do
   src="assets/icon_${sz}.png"
   [ ! -f "$src" ] && src="assets/icon.png"
-  [ -f "$src" ] && cp "$src" "$DEB_DIR/usr/share/icons/hicolor/${sz}x${sz}/apps/flo.png"
+  [ -f "$src" ] && cp "$src" "$DEB_DIR/usr/share/icons/hicolor/${sz}x${sz}/apps/flowe.png"
 done
 
-cat > "$DEB_DIR/usr/share/applications/flo.desktop" << 'DESK'
+cat > "$DEB_DIR/usr/share/applications/flowe.desktop" << 'DESK'
 [Desktop Entry]
 Version=1.0
 Type=Application
-Name=flo
+Name=Flowe
 GenericName=Personal Finance
 Comment=Take control of your money
-Exec=/usr/bin/flo
-Icon=flo
+Exec=/usr/bin/flowe
+Icon=flowe
 Categories=Office;Finance;
-StartupWMClass=flo
+StartupWMClass=flowe
 DESK
 
 INSTALLED_SIZE=$(du -sk "$DEB_DIR/usr" | cut -f1)
 cat > "$DEB_DIR/DEBIAN/control" << CTRL
-Package: flo
+Package: flowe
 Version: $VERSION
 Section: utils
 Priority: optional
 Architecture: amd64
 Installed-Size: $INSTALLED_SIZE
 Maintainer: speeddevilx <https://github.com/thatspeedykid/flowe>
-Description: flo - personal finance tracker
+Description: Flowe - personal finance tracker
 Homepage: https://github.com/thatspeedykid/flowe
 License: MIT
 CTRL
@@ -114,7 +118,7 @@ CTRL
 for script in preinst postinst; do
 cat > "$DEB_DIR/DEBIAN/$script" << SH
 #!/bin/bash
-$([ "$script" = "preinst" ] && echo "rm -f /usr/share/applications/flo.desktop /usr/bin/flo-launch")
+$([ "$script" = "preinst" ] && echo "rm -f /usr/share/applications/flowe.desktop /usr/bin/flowe")
 $([ "$script" = "postinst" ] && echo "update-desktop-database /usr/share/applications 2>/dev/null || true")
 $([ "$script" = "postinst" ] && echo "gtk-update-icon-cache -f -t /usr/share/icons/hicolor 2>/dev/null || true")
 true

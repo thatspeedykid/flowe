@@ -10,7 +10,6 @@ dependencies:
     sdk: flutter
   google_fonts: ^6.1.0
   path_provider: ^2.1.2
-  share_plus: ^7.2.2
   file_selector: ^1.0.3
 
 dev_dependencies:

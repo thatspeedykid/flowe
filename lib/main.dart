@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:share_plus/share_plus.dart';
 import 'package:file_selector/file_selector.dart';
 import 'models/data.dart';
 import 'screens/budget_screen.dart';
@@ -14,7 +13,6 @@ import 'screens/events_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  // Fix blank window on macOS VMware/VirtualBox — disable impeller
   if (Platform.isMacOS) {
     await SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual, overlays: []);
   }
@@ -59,11 +57,9 @@ class _FloAppState extends State<FloApp> {
         useMaterial3: true,
       ),
       builder: (ctx, child) {
-        // Apply font scale — 15.0 is the baseline (scale = 1.0)
         final scale = (_data.fontSize > 0 ? _data.fontSize : 15.0) / 15.0;
         return MediaQuery(
-          data: MediaQuery.of(ctx).copyWith(
-            textScaler: TextScaler.linear(scale)),
+          data: MediaQuery.of(ctx).copyWith(textScaler: TextScaler.linear(scale)),
           child: child!);
       },
       home: _FloShell(
@@ -108,8 +104,6 @@ class _FloShellState extends State<_FloShell> {
     } catch (_) {}
   }
 
-  // ── File picker (cross-platform, no dependency needed) ───────────────────
-  // ── Tab icons ─────────────────────────────────────────────────────────────
   static const _tabIcons = [
     Icons.account_balance_wallet_outlined,
     Icons.ac_unit,
@@ -140,18 +134,16 @@ class _FloShellState extends State<_FloShell> {
         ? MediaQuery.of(context).padding.top + 8
         : 10.0;
 
-    // ── Tablet layout: sidebar nav + content ──────────────────────────────
+    // ── Tablet / desktop sidebar layout ───────────────────────────────────
     if (isTablet) {
       return Scaffold(
         backgroundColor: bg,
         body: Row(children: [
-          // Left sidebar
           Container(
             width: 200,
             color: surface2,
             child: Column(children: [
               SizedBox(height: topPad),
-              // Logo
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
                 child: Row(children: [
@@ -162,7 +154,8 @@ class _FloShellState extends State<_FloShell> {
                       borderRadius: BorderRadius.circular(9)),
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(7),
-                      child: Image.asset(dark ? 'assets/icon_dark.png' : 'assets/icon.png', fit: BoxFit.cover,
+                      child: Image.asset(dark ? 'assets/icon_dark.png' : 'assets/icon.png',
+                        fit: BoxFit.cover,
                         errorBuilder: (_, __, ___) => Icon(Icons.show_chart, color: accent, size: 22)))),
                   const SizedBox(width: 10),
                   Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -175,7 +168,6 @@ class _FloShellState extends State<_FloShell> {
               ),
               Divider(color: border, height: 1),
               const SizedBox(height: 8),
-              // Nav items
               ...List.generate(_tabLabels.length, (i) {
                 final sel = i == widget.tab;
                 return GestureDetector(
@@ -186,8 +178,7 @@ class _FloShellState extends State<_FloShell> {
                     decoration: BoxDecoration(
                       color: sel ? accent.withOpacity(0.12) : Colors.transparent,
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                        color: sel ? accent.withOpacity(0.4) : Colors.transparent)),
+                      border: Border.all(color: sel ? accent.withOpacity(0.4) : Colors.transparent)),
                     child: Row(children: [
                       Icon(_tabIcons[i], size: 16, color: sel ? accent : muted),
                       const SizedBox(width: 10),
@@ -200,12 +191,10 @@ class _FloShellState extends State<_FloShell> {
                 );
               }),
               const Spacer(),
-              // Settings at bottom of sidebar
-              // Coffee on desktop, settings-only on tablet (iOS/Android)
               Padding(
-                padding: EdgeInsets.fromLTRB(8, 0, 8,
-                  MediaQuery.of(context).padding.bottom + 12),
+                padding: EdgeInsets.fromLTRB(8, 0, 8, MediaQuery.of(context).padding.bottom + 12),
                 child: Column(children: [
+                  // Coffee — desktop only, not tablets
                   if (!Platform.isIOS && !Platform.isAndroid) ...[
                     GestureDetector(
                       onTap: () => _openUrl('https://www.paypal.me/Speeddevilx'),
@@ -244,27 +233,22 @@ class _FloShellState extends State<_FloShell> {
               ),
             ]),
           ),
-          // Vertical divider
           Container(width: 1, color: border),
-          // Main content
           Expanded(child: screens[widget.tab]),
         ]),
       );
     }
 
-    // ── Phone layout: top bar + bottom nav ────────────────────────────────
+    // ── Phone layout ──────────────────────────────────────────────────────
     return Scaffold(
       backgroundColor: bg,
       body: Column(children: [
-
-        // ── Top bar ────────────────────────────────────────────────────────
         Container(
           color: surface2,
           child: Column(children: [
             Padding(
               padding: EdgeInsets.fromLTRB(16, topPad, 16, 0),
               child: Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
-                // Icon + Flowe wordmark
                 Container(
                   width: 32, height: 32,
                   decoration: BoxDecoration(
@@ -272,7 +256,8 @@ class _FloShellState extends State<_FloShell> {
                     borderRadius: BorderRadius.circular(8)),
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(6),
-                    child: Image.asset(dark ? 'assets/icon_dark.png' : 'assets/icon.png', fit: BoxFit.cover,
+                    child: Image.asset(dark ? 'assets/icon_dark.png' : 'assets/icon.png',
+                      fit: BoxFit.cover,
                       errorBuilder: (_, __, ___) => Icon(Icons.show_chart, color: accent, size: 20)))),
                 const SizedBox(width: 8),
                 Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -282,7 +267,6 @@ class _FloShellState extends State<_FloShell> {
                     fontSize: 8, color: muted, letterSpacing: 2)),
                 ]),
                 const Spacer(),
-                // Settings gear — desktop only (mobile has it in bottom bar)
                 if (!Platform.isIOS && !Platform.isAndroid)
                   IconButton(
                     icon: Icon(Icons.settings_outlined, color: muted, size: 20),
@@ -292,7 +276,6 @@ class _FloShellState extends State<_FloShell> {
               ]),
             ),
             const SizedBox(height: 8),
-            // Tab row with icons
             Row(children: List.generate(_tabLabels.length, (i) {
               final sel = i == widget.tab;
               return Expanded(child: GestureDetector(
@@ -304,11 +287,10 @@ class _FloShellState extends State<_FloShell> {
                   child: Column(mainAxisSize: MainAxisSize.min, children: [
                     Icon(_tabIcons[i], size: 16, color: sel ? accent : muted),
                     const SizedBox(height: 3),
-                    Text(_tabLabels[i],
-                      style: GoogleFonts.dmMono(
-                        fontSize: 9, letterSpacing: 1.2,
-                        color: sel ? accent : muted,
-                        fontWeight: sel ? FontWeight.w600 : FontWeight.w400)),
+                    Text(_tabLabels[i], style: GoogleFonts.dmMono(
+                      fontSize: 9, letterSpacing: 1.2,
+                      color: sel ? accent : muted,
+                      fontWeight: sel ? FontWeight.w600 : FontWeight.w400)),
                   ]),
                 ),
               ));
@@ -316,18 +298,12 @@ class _FloShellState extends State<_FloShell> {
             Divider(height: 1, color: border),
           ]),
         ),
-
-        // ── Screen ────────────────────────────────────────────────────────
         Expanded(child: screens[widget.tab]),
-
-        // ── Bottom bar ────────────────────────────────────────────────────
-        // Mobile: settings button | Desktop: buy me a coffee
         Container(
           padding: EdgeInsets.only(
             left: 16, right: 16, top: 6,
             bottom: (Platform.isIOS || Platform.isAndroid)
-                ? MediaQuery.of(context).padding.bottom + 6
-                : 6),
+                ? MediaQuery.of(context).padding.bottom + 6 : 6),
           decoration: BoxDecoration(
             color: surface2,
             border: Border(top: BorderSide(color: border))),
@@ -344,8 +320,7 @@ class _FloShellState extends State<_FloShell> {
                   child: Row(mainAxisSize: MainAxisSize.min, children: [
                     Icon(Icons.settings_outlined, color: muted, size: 14),
                     const SizedBox(width: 6),
-                    Text('Settings',
-                      style: GoogleFonts.dmMono(color: muted, fontSize: 11)),
+                    Text('Settings', style: GoogleFonts.dmMono(color: muted, fontSize: 11)),
                   ]),
                 ))
             else
@@ -405,7 +380,7 @@ class _FloShellState extends State<_FloShell> {
             }),
           Divider(color: border),
 
-          // Font size — 3 icon buttons, no slider
+          // Font size
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             child: Row(children: [
@@ -428,15 +403,12 @@ class _FloShellState extends State<_FloShell> {
                       width: 40, height: 36,
                       decoration: BoxDecoration(
                         color: _cur.fontSize == entry.$2 ? accent.withOpacity(0.15) : Colors.transparent,
-                        border: Border.all(
-                          color: _cur.fontSize == entry.$2 ? accent : border),
+                        border: Border.all(color: _cur.fontSize == entry.$2 ? accent : border),
                         borderRadius: BorderRadius.circular(6)),
                       alignment: Alignment.center,
-                      child: Text(entry.$1,
-                        style: TextStyle(
-                          fontSize: entry.$3,
-                          fontWeight: FontWeight.bold,
-                          color: _cur.fontSize == entry.$2 ? accent : muted)),
+                      child: Text(entry.$1, style: TextStyle(
+                        fontSize: entry.$3, fontWeight: FontWeight.bold,
+                        color: _cur.fontSize == entry.$2 ? accent : muted)),
                     ),
                   ),
                 ),
@@ -444,11 +416,14 @@ class _FloShellState extends State<_FloShell> {
           ),
           Divider(color: border),
 
-          // Export
+          // Export — desktop: file save dialog | mobile: save to Downloads folder
           ListTile(
             leading: Icon(Icons.upload_file, color: muted),
             title: Text('Export Backup', style: GoogleFonts.dmMono(color: txt, fontSize: 14)),
-            subtitle: Text('Save your data as a JSON file',
+            subtitle: Text(
+              (Platform.isIOS || Platform.isAndroid)
+                ? 'Saves flowe_backup.json to your Downloads'
+                : 'Choose where to save your backup',
               style: GoogleFonts.dmMono(color: muted, fontSize: 10)),
             onTap: () async {
               Navigator.pop(ctx);
@@ -457,20 +432,28 @@ class _FloShellState extends State<_FloShell> {
                 final filename = 'flowe_backup.json';
 
                 if (Platform.isIOS || Platform.isAndroid) {
-                  // Mobile: save to Documents folder (visible in Files app)
-                  final docsDir = await getApplicationDocumentsDirectory();
-                  final file = File('${docsDir.path}/$filename');
+                  // Mobile: save to Downloads folder
+                  final dir = Directory('/storage/emulated/0/Download');
+                  final iosDir = Platform.isIOS
+                      ? Directory('${(await getApplicationDocumentsDirectory()).path}')
+                      : null;
+                  final saveDir = (Platform.isAndroid && await dir.exists())
+                      ? dir
+                      : (iosDir ?? await getApplicationDocumentsDirectory());
+                  final file = File('${saveDir.path}/$filename');
                   await file.writeAsString(json);
-                  // Also share so user can move it anywhere they want
-                  await Share.shareXFiles(
-                    [XFile(file.path, mimeType: 'application/json')],
-                    subject: 'Flowe Backup',
-                  );
+                  if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                    content: Text(
+                      Platform.isAndroid
+                        ? 'Saved to Downloads/$filename'
+                        : 'Saved — find it in Files app under On My iPhone',
+                      style: GoogleFonts.dmMono(color: const Color(0xFF0f0f0f))),
+                    backgroundColor: accent, duration: const Duration(seconds: 4)));
                 } else {
                   // Desktop: native file save dialog
                   final location = await getSaveLocation(
                     suggestedName: filename,
-                    acceptedTypeGroups: [const XTypeGroup(label: 'JSON')],
+                    acceptedTypeGroups: [const XTypeGroup(label: 'JSON', extensions: ['json'])],
                   );
                   if (location == null) return;
                   await File(location.path).writeAsString(json);
@@ -485,7 +468,7 @@ class _FloShellState extends State<_FloShell> {
               }
             }),
 
-          // Import
+          // Import — all platforms: file picker
           ListTile(
             leading: Icon(Icons.download, color: muted),
             title: Text('Import Backup', style: GoogleFonts.dmMono(color: txt, fontSize: 14)),
@@ -495,7 +478,7 @@ class _FloShellState extends State<_FloShell> {
               Navigator.pop(ctx);
               try {
                 final file = await openFile(
-                  acceptedTypeGroups: [const XTypeGroup(label: 'All', uniformTypeIdentifiers: ['public.item'])],
+                  acceptedTypeGroups: [const XTypeGroup(label: 'JSON', extensions: ['json'])],
                 );
                 if (file == null) return;
                 final content = await file.readAsString();
