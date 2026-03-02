@@ -90,19 +90,13 @@ class _BudgetScreenState extends State<BudgetScreen> {
 
     try {
       if (Platform.isIOS || Platform.isAndroid) {
-        // Android: save to Downloads folder
-        // iOS: save to app Documents (visible in Files app)
-        final dir = Platform.isAndroid
-            ? Directory('/storage/emulated/0/Download')
-            : await getApplicationDocumentsDirectory();
-        final saveDir = (Platform.isAndroid && await (dir as Directory).exists())
-            ? dir
-            : await getApplicationDocumentsDirectory();
-        final file = File('${saveDir.path}/$filename');
+        // Use app documents dir — no permission needed on Android 10+
+        final docsDir = await getApplicationDocumentsDirectory();
+        final file = File('${docsDir.path}/$filename');
         await file.writeAsString(csv);
         _showToast(Platform.isAndroid
-            ? 'Saved to Downloads/$filename'
-            : 'Saved — find it in Files app under On My iPhone');
+            ? 'Saved — open Files app > Android/data/com.example.flowe/files'
+            : 'Saved — open Files app > On My iPhone > Flowe');
       } else {
         // Desktop: native save dialog
         final location = await getSaveLocation(
