@@ -471,16 +471,16 @@ class _FloShellState extends State<_FloShell> {
                   );
                 } else {
                   // Desktop: native file save dialog
-                  final path = await getSavePath(
+                  final location = await getSaveLocation(
                     suggestedName: filename,
                     acceptedTypeGroups: [
                       const XTypeGroup(label: 'JSON', extensions: ['json']),
                     ],
                   );
-                  if (path == null) return; // user cancelled
-                  await File(path).writeAsString(json);
+                  if (location == null) return; // user cancelled
+                  await File(location.path).writeAsString(json);
                   if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                    content: Text('Saved to $path',
+                    content: Text('Saved to ${location.path}',
                       style: GoogleFonts.dmMono(color: const Color(0xFF0f0f0f))),
                     backgroundColor: accent, duration: const Duration(seconds: 3)));
                 }

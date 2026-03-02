@@ -101,15 +101,15 @@ class _BudgetScreenState extends State<BudgetScreen> {
         );
       } else {
         // Desktop: native save dialog
-        final path = await getSavePath(
+        final location = await getSaveLocation(
           suggestedName: filename,
           acceptedTypeGroups: [
             const XTypeGroup(label: 'CSV', extensions: ['csv']),
           ],
         );
-        if (path == null) return;
-        await File(path).writeAsString(csv);
-        _showToast('Saved to $path');
+        if (location == null) return;
+        await File(location.path).writeAsString(csv);
+        _showToast('Saved to ${location.path}');
       }
     } catch (e) {
       _showToast('Export failed: $e');
