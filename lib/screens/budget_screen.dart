@@ -93,12 +93,20 @@ class _BudgetScreenState extends State<BudgetScreen> {
     try {
       if (Platform.isIOS || Platform.isAndroid) {
         if (Platform.isAndroid) {
-          await _platform.invokeMethod('saveToDownloads', {
-            'filename': filename,
-            'content': csv,
-            'mimeType': 'text/csv',
-          });
-          _showToast('Saved to Downloads/$filename');
+          try {
+            final path = await _platform.invokeMethod('saveToDownloads', {
+              'filename': filename,
+              'content': csv,
+              'mimeType': 'text/csv',
+            });
+            _showToast('Saved to $path');
+          } on PlatformException catch (e) {
+            if (e.code == 'PERMISSION_DENIED') {
+              _showToast('Storage permission denied — allow and try again');
+            } else {
+              _showToast('Export failed: ${e.message}');
+            }
+          }
         } else {
           // iOS: save to app Documents — visible in Files app > On My iPhone > Flowe
           final docsDir = await getApplicationDocumentsDirectory();

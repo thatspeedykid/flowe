@@ -436,20 +436,26 @@ class _FloShellState extends State<_FloShell> {
 
                 if (Platform.isIOS || Platform.isAndroid) {
                   if (Platform.isAndroid) {
-                    // Use MediaStore to save directly to Downloads — no permission needed on Android 10+
                     try {
-                      await _platform.invokeMethod('saveToDownloads', {
+                      final path = await _platform.invokeMethod('saveToDownloads', {
                         'filename': filename,
                         'content': json,
                         'mimeType': 'application/json',
                       });
                       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                        content: Text('Saved to Downloads/$filename',
+                        content: Text('Saved to $path',
                           style: GoogleFonts.dmMono(color: const Color(0xFF0f0f0f))),
                         backgroundColor: accent, duration: const Duration(seconds: 3)));
-                    } catch (e) {
-                      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Export failed: $e')));
+                    } on PlatformException catch (e) {
+                      if (e.code == 'PERMISSION_DENIED') {
+                        if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                          content: Text('Storage permission denied — please allow and try again',
+                            style: GoogleFonts.dmMono(color: const Color(0xFF0f0f0f))),
+                          backgroundColor: Colors.orange, duration: const Duration(seconds: 4)));
+                      } else {
+                        if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Export failed: ${e.message}')));
+                      }
                     }
                   } else {
                     // iOS: save to app Documents — visible in Files app > On My iPhone > Flowe
