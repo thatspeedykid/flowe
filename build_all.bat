@@ -36,6 +36,10 @@ if exist "windows\runner\main.cpp" (
     powershell -Command "(gc 'windows\runner\main.cpp') -replace '\"flowe\"', '\"Flowe\"' | sc 'windows\runner\main.cpp'"
 )
 call inject_icons.bat
+:: Inject MainActivity with MediaStore platform channel for Downloads support
+for /f "delims=" %%F in ('dir /s /b "android\app\src\main\kotlin\MainActivity.kt" 2^>nul') do (
+    powershell -Command "$kt = Get-Content '%%F' -Raw; $pkg = [regex]::Match($kt, 'package\s+(\S+)').Groups[1].Value; (Get-Content 'android_MainActivity.kt' -Raw) -replace 'package com.example.flowe', \"package $pkg\" | Set-Content '%%F'; Write-Host '  [OK] Android MediaStore channel injected ('+$pkg+')'"
+)
 echo.
 
 :: ── Step 3: Windows EXE ───────────────────────────────────────────────────────

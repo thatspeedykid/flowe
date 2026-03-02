@@ -11,6 +11,9 @@ import 'screens/snowball_screen.dart';
 import 'screens/networth_screen.dart';
 import 'screens/events_screen.dart';
 
+// Platform channel for Android MediaStore Downloads access
+const _platform = MethodChannel('com.flowe/storage');
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   if (Platform.isMacOS) {
@@ -432,19 +435,32 @@ class _FloShellState extends State<_FloShell> {
                 final filename = 'flowe_backup.json';
 
                 if (Platform.isIOS || Platform.isAndroid) {
-                  // Use app external storage — no permission needed on Android 10+
-                  // Android: visible in Files app under Android/data/com.example.flowe/files
-                  // iOS: visible in Files app under On My iPhone > Flowe
-                  final docsDir = await getApplicationDocumentsDirectory();
-                  final file = File('${docsDir.path}/$filename');
-                  await file.writeAsString(json);
-                  if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                    content: Text(
-                      Platform.isAndroid
-                        ? 'Saved — open Files app > Android/data/com.example.flowe/files'
-                        : 'Saved — open Files app > On My iPhone > Flowe',
-                      style: GoogleFonts.dmMono(color: const Color(0xFF0f0f0f))),
-                    backgroundColor: accent, duration: const Duration(seconds: 5)));
+                  if (Platform.isAndroid) {
+                    // Use MediaStore to save directly to Downloads — no permission needed on Android 10+
+                    try {
+                      await _platform.invokeMethod('saveToDownloads', {
+                        'filename': filename,
+                        'content': json,
+                        'mimeType': 'application/json',
+                      });
+                      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                        content: Text('Saved to Downloads/$filename',
+                          style: GoogleFonts.dmMono(color: const Color(0xFF0f0f0f))),
+                        backgroundColor: accent, duration: const Duration(seconds: 3)));
+                    } catch (e) {
+                      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Export failed: $e')));
+                    }
+                  } else {
+                    // iOS: save to app Documents — visible in Files app > On My iPhone > Flowe
+                    final docsDir = await getApplicationDocumentsDirectory();
+                    final file = File('${docsDir.path}/$filename');
+                    await file.writeAsString(json);
+                    if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                      content: Text('Saved — Files app > On My iPhone > Flowe',
+                        style: GoogleFonts.dmMono(color: const Color(0xFF0f0f0f))),
+                      backgroundColor: accent, duration: const Duration(seconds: 4)));
+                  }
                 } else {
                   // Desktop: native file save dialog
                   final location = await getSaveLocation(

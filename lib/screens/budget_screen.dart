@@ -6,6 +6,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:file_selector/file_selector.dart';
 import '../models/data.dart';
 
+const _platform = MethodChannel('com.flowe/storage');
+
 class BudgetScreen extends StatefulWidget {
   final FloData data;
   final ValueChanged<FloData> onChanged;
@@ -90,13 +92,20 @@ class _BudgetScreenState extends State<BudgetScreen> {
 
     try {
       if (Platform.isIOS || Platform.isAndroid) {
-        // Use app documents dir — no permission needed on Android 10+
-        final docsDir = await getApplicationDocumentsDirectory();
-        final file = File('${docsDir.path}/$filename');
-        await file.writeAsString(csv);
-        _showToast(Platform.isAndroid
-            ? 'Saved — open Files app > Android/data/com.example.flowe/files'
-            : 'Saved — open Files app > On My iPhone > Flowe');
+        if (Platform.isAndroid) {
+          await _platform.invokeMethod('saveToDownloads', {
+            'filename': filename,
+            'content': csv,
+            'mimeType': 'text/csv',
+          });
+          _showToast('Saved to Downloads/$filename');
+        } else {
+          // iOS: save to app Documents — visible in Files app > On My iPhone > Flowe
+          final docsDir = await getApplicationDocumentsDirectory();
+          final file = File('${docsDir.path}/$filename');
+          await file.writeAsString(csv);
+          _showToast('Saved — Files app > On My iPhone > Flowe');
+        }
       } else {
         // Desktop: native save dialog
         final location = await getSaveLocation(

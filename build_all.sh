@@ -28,6 +28,13 @@ echo "[2/4] Setting up platforms and injecting icons..."
 flutter create --platforms=linux,android . >/dev/null 2>&1 || true
 # Fix window title in Linux runner
 [ -f "linux/runner/main.cc" ] && sed -i 's/"flowe"/"Flowe"/g' linux/runner/main.cc
+# Inject MainActivity with MediaStore platform channel for Downloads support
+MAIN_KT=$(find android/app/src/main/kotlin -name "MainActivity.kt" 2>/dev/null | head -1)
+if [ -n "$MAIN_KT" ]; then
+  PKG=$(grep '^package' "$MAIN_KT" | head -1 | awk '{print $2}')
+  sed "s/^package com.example.flowe$/package $PKG/" android_MainActivity.kt > "$MAIN_KT"
+  echo "  [OK] Android MediaStore channel injected ($PKG)"
+fi
 bash inject_icons.sh
 echo ""
 

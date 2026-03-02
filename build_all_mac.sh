@@ -46,6 +46,20 @@ flutter create --platforms=macos,ios . >/dev/null 2>&1 || true
 [ -f "macos/Runner/AppInfo.xcconfig" ] && sed -i '' 's/PRODUCT_NAME = flowe/PRODUCT_NAME = Flowe/g' macos/Runner/AppInfo.xcconfig || true
 [ -f "ios/Runner/AppInfo.xcconfig" ] && sed -i '' 's/PRODUCT_NAME = flowe/PRODUCT_NAME = Flowe/g' ios/Runner/AppInfo.xcconfig || true
 
+# Enable Files app visibility on iOS (On My iPhone > Flowe)
+if [ -f "ios/Runner/Info.plist" ]; then
+  python3 -c "
+import plistlib
+with open('ios/Runner/Info.plist','rb') as f:
+    p = plistlib.load(f)
+p['UIFileSharingEnabled'] = True
+p['LSSupportsOpeningDocumentsInPlace'] = True
+with open('ios/Runner/Info.plist','wb') as f:
+    plistlib.dump(p, f)
+print('  [OK] iOS file sharing enabled')
+"
+fi
+
 # Disable Impeller (fixes blank window on VMware macOS)
 if [ -f "macos/Runner/Info.plist" ]; then
   python3 -c "
