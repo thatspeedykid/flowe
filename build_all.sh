@@ -26,9 +26,13 @@ echo ""
 # ── Step 2: Platform setup + icons ────────────────────────────────────────────
 echo "[2/4] Setting up platforms and injecting icons..."
 flutter create --platforms=linux,android . >/dev/null 2>&1 || true
+# Patch Android package ID from com.example.flowe to com.privacychase.flowe
+for f in android/app/build.gradle android/app/src/main/AndroidManifest.xml; do
+  [ -f "$f" ] && sed -i 's/com\.example\.flowe/com.privacychase.flowe/g' "$f" && echo "  [OK] Patched $f"
+done
+
 # Fix window title in Linux runner
 [ -f "linux/runner/main.cc" ] && sed -i 's/"flowe"/"Flowe"/g' linux/runner/main.cc
-bash inject_icons.sh
 bash inject_icons.sh
 echo ""
 
@@ -110,9 +114,9 @@ Section: utils
 Priority: optional
 Architecture: amd64
 Installed-Size: $INSTALLED_SIZE
-Maintainer: speeddevilx <https://github.com/thatspeedykid/flowe>
+Maintainer: PrivacyChase <https://privacychase.com>
 Description: Flowe - personal finance tracker
-Homepage: https://github.com/thatspeedykid/flowe
+Homepage: https://privacychase.com
 License: MIT
 CTRL
 

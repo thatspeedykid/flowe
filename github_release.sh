@@ -15,12 +15,12 @@
 # ─────────────────────────────────────────────────────────────────
 set -e
 
-VERSION="1.4.1"
+VERSION="1.6.0"
 TAG="v${VERSION}"
 REPO="thatspeedykid/flowe"
 
 echo "=========================================="
-echo "  flo $TAG — GitHub Release Script"
+echo "  Flowe $TAG — GitHub Release Script"
 echo "=========================================="
 echo ""
 
@@ -151,7 +151,7 @@ echo ""
 # ── Step 6: Create GitHub release ────────────────────────────────────────────
 echo "[6/6] Creating GitHub release $TAG..."
 
-RELEASE_NOTES='## flo v1.4.1 — Bug Fix Release
+RELEASE_NOTES='## Flowe v1.6.0 — PrivacyChase
 
 ### Fixed
 - 🔤 **Font size buttons** now actually change text size throughout the app
@@ -183,7 +183,7 @@ cd flo && bash build_all.sh
 MIT License · [Buy me a coffee ☕](https://www.paypal.com/paypalme/speeddevilx)'
 
 # Build the gh release command
-GH_CMD="gh release create \"$TAG\" --title \"flo $TAG\" --notes \"$RELEASE_NOTES\" --repo \"$REPO\""
+GH_CMD="gh release create \"$TAG\" --title \"Flowe $TAG\" --notes \"$RELEASE_NOTES\" --repo \"$REPO\""
 for a in "${ARTIFACTS[@]}"; do
   GH_CMD="$GH_CMD \"$a\""
 done

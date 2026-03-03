@@ -1,9 +1,9 @@
-; flo v1.6.0 NSIS Installer Script
+; Flowe v1.6.0 NSIS Installer Script — PrivacyChase
 
 !define APP_NAME        "Flowe"
 !define APP_VERSION     "1.6.0"
-!define APP_PUBLISHER   "speeddevilx"
-!define APP_URL         "https://github.com/thatspeedykid/flowe"
+!define APP_PUBLISHER   "PrivacyChase"
+!define APP_URL         "https://privacychase.com"
 !define APP_EXE         "flowe.exe"
 !define INSTALL_DIR     "$LOCALAPPDATA\Flowe"
 !define UNINSTALL_KEY   "Software\Microsoft\Windows\CurrentVersion\Uninstall\Flowe"

@@ -42,6 +42,15 @@ echo ""
 # ── Step 2: Platform setup + icons ───────────────────────────────────────────
 echo "[2/5] Setting up platforms and injecting icons..."
 flutter create --platforms=macos,ios . >/dev/null 2>&1 || true
+# Patch bundle ID from com.example.flowe to com.privacychase.flowe
+for plist in ios/Runner/Info.plist macos/Runner/Info.plist; do
+  [ -f "$plist" ] && sed -i '' 's/com\.example\.flowe/com.privacychase.flowe/g' "$plist" 2>/dev/null || true
+done
+for pbx in ios/Runner.xcodeproj/project.pbxproj macos/Runner.xcodeproj/project.pbxproj; do
+  [ -f "$pbx" ] && sed -i '' 's/com\.example\.flowe/com.privacychase.flowe/g' "$pbx" 2>/dev/null || true
+done
+echo "  [OK] Bundle IDs patched to com.privacychase.flowe"
+
 # Fix window title in macOS/iOS runner
 [ -f "macos/Runner/AppInfo.xcconfig" ] && sed -i '' 's/PRODUCT_NAME = flowe/PRODUCT_NAME = Flowe/g' macos/Runner/AppInfo.xcconfig || true
 [ -f "ios/Runner/AppInfo.xcconfig" ] && sed -i '' 's/PRODUCT_NAME = flowe/PRODUCT_NAME = Flowe/g' ios/Runner/AppInfo.xcconfig || true

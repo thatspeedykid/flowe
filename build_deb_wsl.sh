@@ -1,7 +1,7 @@
 #!/bin/bash
 # Called from build_all.bat via WSL — builds the .deb without interactive prompts
 set -e
-VERSION="1.5.0"
+VERSION="1.6.0"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 cd "$SCRIPT_DIR"
 
@@ -48,9 +48,9 @@ Section: utils
 Priority: optional
 Architecture: amd64
 Installed-Size: $INSTALLED_SIZE
-Maintainer: speeddevilx <https://github.com/thatspeedykid/flowewe>
+Maintainer: PrivacyChase <https://privacychase.com>
 Description: flowe - personal finance tracker
-Homepage: https://github.com/thatspeedykid/flowewe
+Homepage: https://privacychase.com
 License: MIT
 CTRL
 

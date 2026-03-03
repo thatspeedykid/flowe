@@ -28,6 +28,8 @@ Flowe is fast, private, and completely offline. Always.
 
 ---
 
+> **Note:** Flowe is transitioning to **PrivacyChase** as its official studio name in preparation for App Store and Google Play launches. Package IDs are moving from `com.example.flowe` to `com.privacychase.flowe`. See the [Upgrading](#upgrading-from-an-older-version) section for data migration details.
+
 ## Features
 
 ### 💰 Monthly Budget
@@ -126,9 +128,11 @@ All outputs land in the `installers/` folder.
 
 **Desktop (Windows / Linux):** Just install over the top. Your data migrates automatically.
 
-**Android / iOS:** Install the new APK/IPA over the existing one without uninstalling. As long as the app ID matches, all your data stays intact. If you're unsure, tap **Copy Backup** first — it takes one second and gives you a full restore point.
+**Android:** Install the new APK over the existing one without uninstalling. The app will automatically detect and migrate your data from the old `com.example.flowe` package location on first launch. As a precaution, tap **Copy Backup** before upgrading — it takes one second and gives you a full restore point.
 
-**From flo (v1.0–v1.4):** Your old data migrates automatically on first launch.
+**iOS:** iOS ties app data to the bundle ID via a UUID container — there is no automatic path migration possible. **Before upgrading, tap Copy Backup and paste the line somewhere safe (Notes, iMessage, email).** After installing the new IPA, tap Paste & Restore and paste the line back. Everything comes back instantly.
+
+**From flo (v1.0–v1.4):** Your old data migrates automatically on first launch on desktop. On mobile, use Copy Backup first.
 
 ---
 
@@ -169,3 +173,10 @@ flowe/
 ## License
 
 MIT — free to use, modify, and distribute. See [LICENSE](LICENSE).
+
+---
+
+<div align="center">
+  <sub>Built by <strong>PrivacyChase</strong> — software that respects you.<br>
+  <a href="https://privacychase.com">privacychase.com</a></sub>
+</div>

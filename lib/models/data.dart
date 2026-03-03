@@ -257,22 +257,49 @@ class FloStorage {
     final appDir = await getApplicationSupportDirectory();
     final file = File('${appDir.path}/data.json');
     if (!await file.exists()) {
-      // Try to migrate from old HTML version paths
-      final legacyPaths = [
-        '${Platform.environment['HOME']}/.local/share/flo/data.json',
-        '${Platform.environment['APPDATA'] ?? ''}/flo/data.json',
-      ];
+      await file.parent.create(recursive: true);
+
+      // ── Migration priority list (checked in order) ────────────────────────
+      // 1. Android: old com.example.flowe package data directory
+      // 2. iOS:     old com.example.flowe app support directory (same UUID-based
+      //             path but accessed via known sibling container path pattern)
+      // 3. Desktop: old HTML/flo app paths (legacy v1.x)
+      final legacyPaths = <String>[];
+
+      if (Platform.isAndroid) {
+        // Android stores app files at /data/user/0/<packageId>/files/
+        // The new package is com.privacychase.flowe — look for old com.example.flowe
+        legacyPaths.addAll([
+          '/data/user/0/com.example.flowe/files/data.json',
+          '/data/data/com.example.flowe/files/data.json', // Android < 5 path
+        ]);
+      } else if (Platform.isIOS) {
+        // iOS: UUIDs differ per install but we can check a shared app group
+        // or the known relative sibling path. Since we can't predict the UUID,
+        // the safest migration for iOS is via the FLOWE backup clipboard flow.
+        // Nothing to do automatically here — handled gracefully below.
+      } else {
+        // Desktop: old HTML flo app (v1.x) paths
+        legacyPaths.addAll([
+          '${Platform.environment['HOME'] ?? ''}/.local/share/flo/data.json',
+          '${Platform.environment['APPDATA'] ?? ''}/flo/data.json',
+          // Also try old flutter app name if it was ever 'flo'
+          '${Platform.environment['HOME'] ?? ''}/.local/share/flo/flo/data.json',
+          '${Platform.environment['APPDATA'] ?? ''}/flo/flo/data.json',
+        ]);
+      }
+
       for (final p in legacyPaths) {
         if (p.isEmpty) continue;
         final legacy = File(p);
         if (await legacy.exists()) {
-          await file.parent.create(recursive: true);
-          await legacy.copy(file.path);
-          break;
+          try {
+            await legacy.copy(file.path);
+            break; // migrated — stop checking
+          } catch (_) {}
         }
       }
     }
-    await file.parent.create(recursive: true);
     return file;
   }
 

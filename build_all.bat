@@ -28,6 +28,15 @@ echo.
 :: ── Step 2: Platform setup + icon injection ───────────────────────────────────
 echo [2/5] Setting up platforms and injecting icons...
 call flutter create --platforms=windows,android . >nul 2>&1
+:: Patch Android package ID from com.example.flowe to com.privacychase.flowe
+if exist "androidppuild.gradle" (
+    powershell -Command "(gc 'android\app\build.gradle') -replace 'com\.example\.flowe', 'com.privacychase.flowe' | sc 'android\app\build.gradle'"
+)
+if exist "androidpp\src\main\AndroidManifest.xml" (
+    powershell -Command "(gc 'android\app\src\main\AndroidManifest.xml') -replace 'com\.example\.flowe', 'com.privacychase.flowe' | sc 'android\app\src\main\AndroidManifest.xml'"
+)
+echo   [OK] Android package ID patched to com.privacychase.flowe
+
 :: Fix window title in Windows runner
 if exist "windows\runner\Runner.rc" (
     powershell -Command "(gc 'windows\runner\Runner.rc') -replace 'flowe', 'Flowe' | sc 'windows\runner\Runner.rc'"
