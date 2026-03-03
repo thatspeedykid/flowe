@@ -397,7 +397,9 @@ class _BudgetScreenState extends State<BudgetScreen> {
         final loc = await getSaveLocation(suggestedName: filename,
           acceptedTypeGroups: [XTypeGroup(label: ext.toUpperCase(), extensions: [ext])]);
         if (loc == null) return;
-        final dir = Directory(loc.path.substring(0, loc.path.lastIndexOf('/')));
+        final p = loc.path;
+        final sepIdx = p.lastIndexOf(Platform.isWindows ? '\\' : '/');
+        final dir = Directory(sepIdx > 0 ? p.substring(0, sepIdx) : p);
         final file = await writeFile(dir);
         if (file.path != loc.path) await file.copy(loc.path);
         _showToast('Saved to ${loc.path}');

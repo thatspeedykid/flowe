@@ -4,13 +4,13 @@
 
 # Flowe
 
-**The file-first budgeting app.**
+**The file-first budgeting app.**  
 **No accounts. No subscriptions. Ever.**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg?style=flat-square)](LICENSE)
 [![Version](https://img.shields.io/badge/version-1.6.0-c8f560?style=flat-square)](#changelog)
 [![Flutter](https://img.shields.io/badge/Flutter-3.x-54C5F8?style=flat-square&logo=flutter)](https://flutter.dev)
-[![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20Android%20%7C%20iOS%20%7C%20macOS-blue?style=flat-square)](#getting-started)
+[![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20Android%20%7C%20iOS-blue?style=flat-square)](#download)
 
 *Your data lives on your device. We never touch it.*
 
@@ -22,7 +22,7 @@
 
 Most budget apps want your email, your bank login, and a monthly fee. Flowe doesn't.
 
-Your data lives on your device. Back it up how you want — AirDrop it, email it, drop it in Google Drive, or just leave it where it is. No cloud sync to break. No subscription to cancel. No account to forget the password to.
+Your data lives in a file on your device. Back it up how you want — copy a single line to your notes app, AirDrop it, email it, drop it in Google Drive. No cloud sync to break. No subscription to cancel. No account to forget the password to.
 
 Flowe is fast, private, and completely offline. Always.
 
@@ -33,34 +33,36 @@ Flowe is fast, private, and completely offline. Always.
 ### 💰 Monthly Budget
 - Fully customizable income and expense sections
 - Tag rows: 💳 debt · 🏦 savings · 💰 income · 📦 other
-- 6-month income vs expenses chart
-- Carry over previous month in one tap
+- 6-month income vs expenses overview chart
+- Carry over previous month's budget in one tap
 - Export to **CSV** or **PDF** — save to Downloads or share anywhere
+- CSV includes full debt snowball with payoff dates per debt
+- PDF includes budget summary + full snowball section with timeline bars
 
 ### ❄️ Debt Snowball
-- Track credit cards, loans, medical debt — anything
+- Track credit cards, loans, medical debt — anything with a balance
 - Import debts directly from budget rows tagged 💳
-- Full snowball payoff simulation with projected dates
-- **Balance-over-time chart** — visual payoff curve
-- **Total cost breakdown** — principal vs interest stacked bar
-- Calendar date picker for due dates with 🔴/🟠 urgency badges
+- Full snowball payoff simulation with projected payoff dates
+- **Balance-over-time chart** — visual payoff curve showing your debt melting away
+- **Total cost breakdown** — stacked bar showing principal vs total interest paid
+- Calendar date picker for due dates
+- 🔴 red ≤3 days · 🟠 orange ≤7 days urgency badges
 
 ### 📈 Net Worth
-- Track assets and liabilities
+- Track assets and liabilities side by side
 - Dated snapshots with +/- delta vs previous snapshot
-- Liabilities auto-linked from snowball debts
+- Liabilities auto-populated from your snowball debts
 
 ### 🎉 Event Budgets
-- Plan vacations, weddings, parties — any event
+- Plan vacations, weddings, parties — any one-time spend
 - Per-event budget cap with live progress bar
 - Split calculator — people and amounts persist between sessions
 
 ### 🔒 Your Data, Your Rules
-- All data stored in a single file on your device
-- **Copy Backup** — one tap copies a compact encoded line to clipboard
-- **Paste & Restore** — paste it back on any device to restore everything
-- Export CSV + PDF from Budget screen (save or share)
-- Zero telemetry, zero analytics, zero network requests
+- All data stored in a single file on your device — nothing leaves without you
+- **Copy Backup** — one tap encodes your entire budget into a single compact line and copies it to clipboard. Paste it anywhere: Notes, iMessage, email, Notion
+- **Paste & Restore** — paste the line back on any device, any platform, to restore everything instantly. No files, no cloud, no account
+- Zero telemetry. Zero analytics. Zero network requests. Ever.
 
 ---
 
@@ -71,8 +73,18 @@ Flowe is fast, private, and completely offline. Always.
 | Windows | `flowe_1.6.0_setup.exe` | ✅ Stable |
 | Linux | `flowe_1.6.0_amd64.deb` | ✅ Stable |
 | Android | `flowe_1.6.0.apk` | ✅ Stable |
-| iOS | `flowe_1.6.0.ipa` | ✅ Stable *(sideload via [Sideloadly](https://sideloadly.io))* |
-| macOS | `flowe_1.6.0.dmg` | 🧪 Untested |
+| iOS | `flowe_1.6.0.ipa` | ✅ Stable — sideload via [Sideloadly](https://sideloadly.io) |
+| macOS | `flowe_1.6.0.dmg` | 🧪 Untested — build from source at your own risk |
+
+### ⚠️ About signing & SmartScreen warnings
+
+Flowe releases are currently **unsigned**. This means:
+
+- **Windows** will show a SmartScreen warning ("Windows protected your PC") when you run the installer. Click **More info → Run anyway** to proceed. This is normal for unsigned indie software.
+- **Android** will warn about installing from unknown sources. Enable it once in your security settings.
+- **iOS** requires sideloading via [Sideloadly](https://sideloadly.io) since there's no App Store listing yet.
+
+Code signing certificates cost $200–400/year for Windows and $99/year for Apple. As a solo indie project, I'm holding off on that until there's more of a reason to spend it. The source code is fully open — you're welcome to build it yourself and verify nothing sketchy is happening.
 
 ---
 
@@ -96,8 +108,9 @@ cd flowe
 bash build_all.sh
 ```
 
-### Mac (builds DMG + IPA)
-Requires: Flutter · Xcode · CocoaPods · create-dmg
+### macOS (builds DMG + IPA)
+Requires: Flutter · Xcode · CocoaPods · create-dmg  
+⚠️ macOS build is untested — I don't have a bare-metal Mac to test on. It may work, it may not. PRs welcome.
 
 ```bash
 git clone https://github.com/thatspeedykid/flowe
@@ -105,13 +118,17 @@ cd flowe
 bash build_all_mac.sh
 ```
 
-All outputs go to the `installers/` folder.
+All outputs land in the `installers/` folder.
 
 ---
 
-## Upgrading from flo (v1.0–v1.4)
+## Upgrading from an older version
 
-Your data migrates automatically on first launch. No manual steps needed.
+**Desktop (Windows / Linux):** Just install over the top. Your data migrates automatically.
+
+**Android / iOS:** Install the new APK/IPA over the existing one without uninstalling. As long as the app ID matches, all your data stays intact. If you're unsure, tap **Copy Backup** first — it takes one second and gives you a full restore point.
+
+**From flo (v1.0–v1.4):** Your old data migrates automatically on first launch.
 
 ---
 
@@ -122,7 +139,7 @@ Your data migrates automatically on first launch. No manual steps needed.
 | Windows | `%APPDATA%\flowe\flowe\data.json` |
 | Linux | `~/.local/share/flowe/flowe/data.json` |
 | macOS | `~/Library/Application Support/flowe/flowe/data.json` |
-| iOS / Android | App private storage (export via share sheet) |
+| iOS / Android | App private storage — use Copy Backup to move data |
 
 ---
 
@@ -138,13 +155,13 @@ flowe/
 │       ├── snowball_screen.dart  ← debt snowball + charts
 │       ├── networth_screen.dart  ← net worth snapshots
 │       └── events_screen.dart    ← event budgets + split calculator
-├── assets/                       ← icons (all sizes, all platforms)
-├── build_all.bat                 ← Windows: EXE + APK + installer
+├── assets/                       ← icons for all platforms and sizes
+├── build_all.bat                 ← Windows: EXE + APK + NSIS installer
 ├── build_all.sh                  ← Linux/WSL: DEB + APK
-├── build_all_mac.sh              ← Mac: DMG + IPA
+├── build_all_mac.sh              ← macOS: DMG + IPA
 ├── flowe_setup.nsi               ← NSIS Windows installer script
-├── inject_icons.sh / .bat        ← platform icon injection
-└── installers/                   ← all build outputs go here
+├── inject_icons.sh / .bat        ← platform icon injection helpers
+└── installers/                   ← all build outputs land here
 ```
 
 ---

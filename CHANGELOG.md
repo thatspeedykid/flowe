@@ -5,27 +5,30 @@
 ## v1.6.0 — March 2026
 
 ### New
-- **PDF export** — Budget screen exports a formatted PDF (save to Downloads or share)
-- **CSV includes snowball** — debt table appended below budget rows in the same export
-- **Snowball charts** — balance-over-time curve + principal vs interest cost breakdown bar
-- **Export picker on mobile** — tap CSV or PDF to choose Save to Files or Share sheet
-- **Copy Backup** — one tap copies a compact encoded backup line to clipboard; paste anywhere (Notes, email, iMessage) to save
-- **Paste & Restore** — paste backup line back on any device to restore all data; no file needed
-- **Android PDF to Downloads** — PDF saves directly to Downloads folder via native channel (no share sheet required)
-- **share_plus** — share sheet on iOS/macOS for all exports
+- **Debt snowball charts** — balance-over-time area chart + principal vs interest cost breakdown stacked bar
+- **PDF export** — full budget report with snowball section, per-debt payoff timeline, and visual progress bars
+- **CSV includes full snowball** — payoff months and dates per debt appended below budget rows
+- **Mobile export picker (Android)** — choose Save to Downloads or Share when exporting CSV/PDF
+- **iOS export** — goes straight to native share sheet (Save to Files is built in)
+- **Copy Backup** — encodes entire app state into a single compact clipboard line (gzip + base64, `FLOWE2:` format)
+- **Paste & Restore** — paste backup line on any device/platform to restore everything; no file needed
+- **Android PDF to Downloads** — PDF saves directly via native `saveBytesToDownloads` channel (no share sheet required)
 
 ### Fixed
-- Backup format upgraded to `FLOWE2:` (gzip+base64) — lines ~65% shorter than before
-- Legacy `FLOWE1:` backups still restore correctly
-- Restore now shows exact error message instead of generic "failed"
-- `objective_c` dependency bumped to `^9.3.0` to fix pub resolution
+- **Windows CSV/PDF export crash** — `RangeError: Not in range 0..50: -1` — Windows path separator `\` vs `/` caused `substring(0,-1)` crash. Fixed with platform-aware separator detection
+- **Restore error messages** — now shows actual decode error instead of generic "is the backup line complete?"
+- **Backup line length** — new `FLOWE2:` format is ~65% shorter than old `FLOWE1:` (gzip compression before base64)
+- **Legacy `FLOWE1:` backups** — still restore correctly on new version
+- **`objective_c` dependency** — pinned to `^9.3.0` to fix pub resolution failure on iOS/macOS builds
+- **Android 9 export permission** — `WRITE_EXTERNAL_STORAGE` runtime dialog now properly requested and save retried after grant
+- **Android PDF binary save** — PDFs were falling back to share sheet on "Save" choice; fixed with native `saveBytesToDownloads` MediaStore channel
 
 ### Platform status
 - ✅ Windows — Stable
 - ✅ Linux — Stable
 - ✅ Android — Stable
 - ✅ iOS — Stable
-- 🧪 macOS — Untested
+- 🧪 macOS — Untested (no bare-metal Mac)
 
 ---
 
