@@ -1,7 +1,7 @@
 @echo off
 setlocal
 cd /d "%~dp0"
-set VERSION=1.5.0
+set VERSION=1.6.0
 title Flowe v%VERSION% - Build All
 echo.
 echo ==========================================

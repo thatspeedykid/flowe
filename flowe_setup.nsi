@@ -1,7 +1,7 @@
-; flo v1.5.0 NSIS Installer Script
+; flo v1.6.0 NSIS Installer Script
 
 !define APP_NAME        "Flowe"
-!define APP_VERSION     "1.5.0"
+!define APP_VERSION     "1.6.0"
 !define APP_PUBLISHER   "speeddevilx"
 !define APP_URL         "https://github.com/thatspeedykid/flowe"
 !define APP_EXE         "flowe.exe"

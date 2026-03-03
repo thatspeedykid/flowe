@@ -1,10 +1,12 @@
 import 'dart:io';
 import 'dart:convert';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:file_selector/file_selector.dart';
+import 'package:share_plus/share_plus.dart';
 import 'models/data.dart';
 import 'screens/budget_screen.dart';
 import 'screens/snowball_screen.dart';
@@ -419,97 +421,125 @@ class _FloShellState extends State<_FloShell> {
           ),
           Divider(color: border),
 
-          // Export — desktop: file save dialog | mobile: save to Downloads folder
+          // Export Backup — copy a single encoded line to clipboard
           ListTile(
-            leading: Icon(Icons.upload_file, color: muted),
-            title: Text('Export Backup', style: GoogleFonts.dmMono(color: txt, fontSize: 14)),
-            subtitle: Text(
-              (Platform.isIOS || Platform.isAndroid)
-                ? 'Saves flowe_backup.json to your Downloads'
-                : 'Choose where to save your backup',
+            leading: Icon(Icons.copy, color: muted),
+            title: Text('Copy Backup', style: GoogleFonts.dmMono(color: txt, fontSize: 14)),
+            subtitle: Text('Copies a single line — paste it anywhere to save',
               style: GoogleFonts.dmMono(color: muted, fontSize: 10)),
-            onTap: () async {
+            onTap: () {
               Navigator.pop(ctx);
               try {
                 final json = jsonEncode(_cur.toJson());
-                final filename = 'flowe_backup.json';
-
-                if (Platform.isIOS || Platform.isAndroid) {
-                  if (Platform.isAndroid) {
-                    try {
-                      final path = await _platform.invokeMethod('saveToDownloads', {
-                        'filename': filename,
-                        'content': json,
-                        'mimeType': 'application/json',
-                      });
-                      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                        content: Text('Saved to $path',
-                          style: GoogleFonts.dmMono(color: const Color(0xFF0f0f0f))),
-                        backgroundColor: accent, duration: const Duration(seconds: 3)));
-                    } on PlatformException catch (e) {
-                      if (e.code == 'PERMISSION_DENIED') {
-                        if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                          content: Text('Storage permission denied — please allow and try again',
-                            style: GoogleFonts.dmMono(color: const Color(0xFF0f0f0f))),
-                          backgroundColor: Colors.orange, duration: const Duration(seconds: 4)));
-                      } else {
-                        if (mounted) ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Export failed: ${e.message}')));
-                      }
-                    }
-                  } else {
-                    // iOS: save to app Documents — visible in Files app > On My iPhone > Flowe
-                    final docsDir = await getApplicationDocumentsDirectory();
-                    final file = File('${docsDir.path}/$filename');
-                    await file.writeAsString(json);
-                    if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                      content: Text('Saved — Files app > On My iPhone > Flowe',
-                        style: GoogleFonts.dmMono(color: const Color(0xFF0f0f0f))),
-                      backgroundColor: accent, duration: const Duration(seconds: 4)));
-                  }
-                } else {
-                  // Desktop: native file save dialog
-                  final location = await getSaveLocation(
-                    suggestedName: filename,
-                    acceptedTypeGroups: [const XTypeGroup(label: 'JSON', extensions: ['json'])],
-                  );
-                  if (location == null) return;
-                  await File(location.path).writeAsString(json);
-                  if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                    content: Text('Saved to ${location.path}',
-                      style: GoogleFonts.dmMono(color: const Color(0xFF0f0f0f))),
-                    backgroundColor: accent, duration: const Duration(seconds: 3)));
-                }
+                final compressed = GZipCodec().encode(utf8.encode(json));
+                final line = 'FLOWE2:${base64.encode(Uint8List.fromList(compressed))}';
+                Clipboard.setData(ClipboardData(text: line));
+                if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                  content: Text('Backup copied! Paste it in Notes, email, anywhere safe.',
+                    style: GoogleFonts.dmMono(color: const Color(0xFF0f0f0f))),
+                  backgroundColor: accent, duration: const Duration(seconds: 4)));
               } catch (e) {
                 if (mounted) ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Export failed: $e')));
+                  SnackBar(content: Text('Backup failed: $e')));
               }
             }),
 
-          // Import — all platforms: file picker
+          // Import Backup — paste the line back
           ListTile(
-            leading: Icon(Icons.download, color: muted),
-            title: Text('Import Backup', style: GoogleFonts.dmMono(color: txt, fontSize: 14)),
-            subtitle: Text('Restore from a flowe_backup.json file',
+            leading: Icon(Icons.restore, color: muted),
+            title: Text('Paste & Restore', style: GoogleFonts.dmMono(color: txt, fontSize: 14)),
+            subtitle: Text('Paste your backup line to restore all data',
               style: GoogleFonts.dmMono(color: muted, fontSize: 10)),
-            onTap: () async {
+            onTap: () {
               Navigator.pop(ctx);
-              try {
-                final file = await openFile(
-                  acceptedTypeGroups: [const XTypeGroup(label: 'JSON', extensions: ['json'])],
-                );
-                if (file == null) return;
-                final content = await file.readAsString();
-                final imported = FloData.fromJson(jsonDecode(content));
-                _save(imported);
-                if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                  content: Text('Backup imported successfully',
-                    style: GoogleFonts.dmMono(color: const Color(0xFF0f0f0f))),
-                  backgroundColor: accent));
-              } catch (e) {
-                if (mounted) ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Import failed: $e')));
-              }
+              final controller = TextEditingController();
+              showDialog(
+                context: context,
+                builder: (c) => AlertDialog(
+                  backgroundColor: dark ? const Color(0xFF1a1a1a) : Colors.white,
+                  title: Text('Paste Backup', style: GoogleFonts.dmMono(
+                    color: dark ? const Color(0xFFe8e8e8) : const Color(0xFF1c1a17))),
+                  content: Column(mainAxisSize: MainAxisSize.min, children: [
+                    Text('Paste your FLOWE1:... backup line below:',
+                      style: GoogleFonts.dmMono(
+                        color: dark ? const Color(0xFF777777) : const Color(0xFF7a7060),
+                        fontSize: 12)),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: controller,
+                      maxLines: 4,
+                      style: GoogleFonts.dmMono(fontSize: 11,
+                        color: dark ? const Color(0xFFe8e8e8) : const Color(0xFF1c1a17)),
+                      decoration: InputDecoration(
+                        hintText: 'FLOWE1:...',
+                        hintStyle: GoogleFonts.dmMono(
+                          color: dark ? const Color(0xFF555555) : const Color(0xFFaaaaaa),
+                          fontSize: 11),
+                        border: OutlineInputBorder(
+                          borderSide: BorderSide(
+                            color: dark ? const Color(0xFF2e2e2e) : const Color(0xFFd4cfc6))),
+                        filled: true,
+                        fillColor: dark ? const Color(0xFF222222) : const Color(0xFFf5f5f0)),
+                    ),
+                  ]),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(c),
+                      child: Text('Cancel', style: GoogleFonts.dmMono(
+                        color: dark ? const Color(0xFF777777) : const Color(0xFF7a7060)))),
+                    TextButton(
+                      onPressed: () {
+                        Navigator.pop(c);
+                        try {
+                          final input = controller.text.trim();
+                          FloData imported;
+                          try {
+                            if (input.startsWith('FLOWE2:')) {
+                              // gzip + base64 (current format)
+                              final compressed = base64.decode(input.substring(7));
+                              final jsonBytes = GZipCodec().decode(compressed);
+                              imported = FloData.fromJson(jsonDecode(utf8.decode(jsonBytes)));
+                            } else if (input.startsWith('FLOWE1:')) {
+                              // legacy XOR format
+                              final xored = base64.decode(input.substring(7));
+                              final key = 'flowe-backup-key-v1';
+                              final keyBytes = utf8.encode(key);
+                              final bytes = Uint8List(xored.length);
+                              for (int i = 0; i < xored.length; i++) {
+                                bytes[i] = xored[i] ^ keyBytes[i % keyBytes.length];
+                              }
+                              imported = FloData.fromJson(jsonDecode(utf8.decode(bytes)));
+                            } else {
+                              // try plain base64 or raw json as last resort
+                              try {
+                                final decoded = base64.decode(input);
+                                imported = FloData.fromJson(jsonDecode(utf8.decode(decoded)));
+                              } catch (_) {
+                                imported = FloData.fromJson(jsonDecode(input));
+                              }
+                            }
+                          } catch (decodeErr) {
+                            if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('Restore failed: $decodeErr'),
+                                duration: const Duration(seconds: 6)));
+                            return;
+                          }
+                          _save(imported);
+                          if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                            content: Text('Restored successfully!',
+                              style: GoogleFonts.dmMono(color: const Color(0xFF0f0f0f))),
+                            backgroundColor: accent));
+                        } catch (e) {
+                          if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Restore failed: $e'),
+                              duration: const Duration(seconds: 6)));
+                        }
+                      },
+                      child: Text('Restore', style: GoogleFonts.dmMono(
+                        color: dark ? const Color(0xFFc8f560) : const Color(0xFF5a8a00)))),
+                  ],
+                ),
+              );
             }),
           Divider(color: border),
 
@@ -533,7 +563,7 @@ class _FloShellState extends State<_FloShell> {
           Padding(
             padding: const EdgeInsets.all(16),
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text('Flowe v1.5.0', style: GoogleFonts.dmMono(color: muted, fontSize: 12)),
+              Text('Flowe v1.6.0', style: GoogleFonts.dmMono(color: muted, fontSize: 12)),
               const SizedBox(height: 2),
               Text('Windows · Linux · Android · iOS · macOS',
                 style: GoogleFonts.dmMono(color: muted, fontSize: 10)),

@@ -36,10 +36,8 @@ class MainActivity : FlutterActivity() {
                 val mimeType = call.argument<String>("mimeType") ?: "application/octet-stream"
 
                 if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
-                    // Android 9 and below — need runtime WRITE_EXTERNAL_STORAGE permission
                     if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE)
                         != PackageManager.PERMISSION_GRANTED) {
-                        // Store pending and request permission
                         pendingFilename = filename
                         pendingContent  = content
                         pendingMimeType = mimeType
@@ -59,6 +57,19 @@ class MainActivity : FlutterActivity() {
                 } catch (e: Exception) {
                     result.error("SAVE_FAILED", e.message, null)
                 }
+
+            } else if (call.method == "saveBytesToDownloads") {
+                val filename = call.argument<String>("filename") ?: "flowe_export"
+                val bytes    = call.argument<ByteArray>("bytes")  ?: ByteArray(0)
+                val mimeType = call.argument<String>("mimeType") ?: "application/octet-stream"
+
+                try {
+                    val savedPath = saveBytesToDownloads(filename, bytes, mimeType)
+                    result.success(savedPath)
+                } catch (e: Exception) {
+                    result.error("SAVE_FAILED", e.message, null)
+                }
+
             } else {
                 result.notImplemented()
             }
@@ -140,6 +151,45 @@ class MainActivity : FlutterActivity() {
             downloadsDir.mkdirs()
             val file = File(downloadsDir, filename)
             FileOutputStream(file).use { it.write(content.toByteArray(Charsets.UTF_8)) }
+            file.absolutePath
+        }
+    }
+
+    private fun saveBytesToDownloads(filename: String, bytes: ByteArray, mimeType: String): String {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            val resolver = contentResolver
+            val existing = resolver.query(
+                MediaStore.Downloads.EXTERNAL_CONTENT_URI,
+                arrayOf(MediaStore.Downloads._ID),
+                "${MediaStore.Downloads.DISPLAY_NAME} = ?",
+                arrayOf(filename), null
+            )
+            existing?.use {
+                while (it.moveToNext()) {
+                    val id = it.getLong(it.getColumnIndexOrThrow(MediaStore.Downloads._ID))
+                    val uri = Uri.withAppendedPath(MediaStore.Downloads.EXTERNAL_CONTENT_URI, id.toString())
+                    resolver.delete(uri, null, null)
+                }
+            }
+            val values = ContentValues().apply {
+                put(MediaStore.Downloads.DISPLAY_NAME, filename)
+                put(MediaStore.Downloads.MIME_TYPE, mimeType)
+                put(MediaStore.Downloads.IS_PENDING, 1)
+            }
+            val uri = resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values)
+                ?: throw Exception("MediaStore insert failed")
+            resolver.openOutputStream(uri)?.use { stream ->
+                stream.write(bytes)
+            } ?: throw Exception("Could not open output stream")
+            values.clear()
+            values.put(MediaStore.Downloads.IS_PENDING, 0)
+            resolver.update(uri, values, null, null)
+            "Downloads/$filename"
+        } else {
+            val downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+            downloadsDir.mkdirs()
+            val file = File(downloadsDir, filename)
+            FileOutputStream(file).use { it.write(bytes) }
             file.absolutePath
         }
     }
