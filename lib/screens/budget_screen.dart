@@ -81,72 +81,181 @@ class _BudgetScreenState extends State<BudgetScreen> {
     _showToast('Carried over from last month!');
   }
 
-  // ── Build CSV: budget + snowball appended below ──────────────────────────
+  // ── Snowball calc (for export) ──────────────────────────────────────────
+  Map<String, dynamic> _calcSnowball(List<Debt> debts, double extra) {
+    if (debts.isEmpty) return {'months': 0, 'totalInterest': 0.0, 'payoffMonths': <int>[]};
+    var balances = debts.map((d) => d.balance).toList();
+    double total = balances.fold(0.0, (a, b) => a + b);
+    if (total <= 0) return {'months': 0, 'totalInterest': 0.0, 'payoffMonths': List.filled(debts.length, 0)};
+    int month = 0;
+    double totalInterest = 0.0;
+    final payoffMonths = List.filled(debts.length, 0);
+    while (total > 0.01 && month < 600) {
+      month++;
+      for (var i = 0; i < debts.length; i++) {
+        if (balances[i] <= 0) continue;
+        final interest = balances[i] * (debts[i].apr / 100 / 12);
+        totalInterest += interest;
+        balances[i] = balances[i] + interest - debts[i].minPayment;
+        if (balances[i] < 0) balances[i] = 0;
+        if (balances[i] == 0 && payoffMonths[i] == 0) payoffMonths[i] = month;
+      }
+      for (var i = 0; i < debts.length; i++) {
+        if (balances[i] > 0) {
+          balances[i] -= extra;
+          if (balances[i] < 0) { balances[i] = 0; if (payoffMonths[i] == 0) payoffMonths[i] = month; }
+          break;
+        }
+      }
+      total = balances.fold(0.0, (a, b) => a + b);
+    }
+    return {'months': month, 'totalInterest': totalInterest, 'payoffMonths': payoffMonths};
+  }
+
+  String _payoffDate(int months) {
+    if (months == 0) return 'Unknown';
+    final d = DateTime.now();
+    final target = DateTime(d.year, d.month + months);
+    const ms = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    return '${ms[target.month-1]} ${target.year}';
+  }
+
+  String _fmtMonths(int m) {
+    if (m == 0) return '--';
+    if (m < 12) return '${m}mo';
+    final y = m ~/ 12; final mo = m % 12;
+    return mo > 0 ? '${y}y ${mo}mo' : '${y}yr';
+  }
+
+  // ── Build CSV: budget + full snowball with payoff dates ──────────────────
   String _buildCSV() {
     final b = _budget;
     final rows = ['Label,Amount,Type,Section'];
-    for (final s in b.income)  for (final r in s.rows) rows.add('"${r.label}",${r.amount.toStringAsFixed(2)},Income,"${s.name}"');
-    for (final s in b.expense) for (final r in s.rows) rows.add('"${r.label}",${r.amount.toStringAsFixed(2)},Expense,"${s.name}"');
+    for (final s in b.income)
+      for (final r in s.rows)
+        rows.add('"${r.label}",${r.amount.toStringAsFixed(2)},Income,"${s.name}"');
+    for (final s in b.expense)
+      for (final r in s.rows)
+        rows.add('"${r.label}",${r.amount.toStringAsFixed(2)},Expense,"${s.name}"');
     rows.add('"Total Income",${b.totalIncome.toStringAsFixed(2)},,');
     rows.add('"Total Expenses",${b.totalExpense.toStringAsFixed(2)},,');
     rows.add('"Remaining",${b.remaining.toStringAsFixed(2)},,');
     final debts = _data.debts;
     if (debts.isNotEmpty) {
+      final calc = _calcSnowball(debts, _data.extraPayment);
+      final payoffMonths = calc['payoffMonths'] as List<int>;
+      final totalMonths  = calc['months'] as int;
+      final totalInterest = calc['totalInterest'] as double;
       rows.add('');
       rows.add('--- DEBT SNOWBALL ---');
-      rows.add('Debt Name,Balance,Min Payment,APR %,Type,Due Date');
-      for (final d in debts) {
-        rows.add('"${d.name}",${d.balance.toStringAsFixed(2)},${d.minPayment.toStringAsFixed(2)},${d.apr.toStringAsFixed(2)},"${d.type}","${d.dueDate ?? ''}"');
+      rows.add('"Debt-Free In","${_fmtMonths(totalMonths)} (${_payoffDate(totalMonths)})",,');
+      rows.add('"Total Interest",${totalInterest.toStringAsFixed(2)},,');
+      rows.add('"Extra Monthly Payment",${_data.extraPayment.toStringAsFixed(2)},,');
+      rows.add('');
+      rows.add('Debt Name,Balance,Min Payment,APR %,Type,Due Date,Payoff In,Payoff Date');
+      for (int i = 0; i < debts.length; i++) {
+        final d = debts[i];
+        final pm = i < payoffMonths.length ? payoffMonths[i] : 0;
+        rows.add('"${d.name}",${d.balance.toStringAsFixed(2)},${d.minPayment.toStringAsFixed(2)},'
+          '${d.apr.toStringAsFixed(2)},"${d.type}","${d.dueDate ?? ''}",'
+          '"${_fmtMonths(pm)}","${_payoffDate(pm)}"');
       }
-      rows.add('"Total Debt",${debts.fold(0.0, (s, d) => s + d.balance).toStringAsFixed(2)},,,,"');
-      rows.add('"Extra Monthly",${_data.extraPayment.toStringAsFixed(2)},,,,"');
+      rows.add('"Total Debt",${debts.fold(0.0, (s, d) => s + d.balance).toStringAsFixed(2)},,,,,,');
     }
     return rows.join('\n');
   }
 
-  // ── Build minimal PDF ────────────────────────────────────────────────────
+  // ── Build PDF with full snowball + text timeline bars ────────────────────
   Uint8List _buildPDF() {
     final b = _budget;
     final debts = _data.debts;
     final lines = <String>[];
-    lines.add('Flowe Budget Report — $_key');
+    lines.add('Flowe Budget Report -- $_key');
+    lines.add('Generated ${DateTime.now().toString().split('.')[0]}');
+    lines.add('');
+    lines.add('=' * 52);
+    lines.add('BUDGET SUMMARY');
+    lines.add('=' * 52);
     lines.add('');
     for (final s in b.income) {
-      lines.add('INCOME: ${s.name}');
+      lines.add('  ${s.name}');
       for (final r in s.rows) {
-        if (r.label.isNotEmpty || r.amount > 0) {
-          lines.add('  ${r.label.padRight(28)} \$${r.amount.toStringAsFixed(2)}');
-        }
+        if (r.label.isNotEmpty || r.amount > 0)
+          lines.add('    ${r.label.padRight(30)} \$${r.amount.toStringAsFixed(2)}');
       }
-      lines.add('  Subtotal: \$${s.total.toStringAsFixed(2)}');
+      lines.add('    ' + '-' * 38);
+      lines.add('    ${'Subtotal'.padRight(30)} \$${s.total.toStringAsFixed(2)}');
       lines.add('');
     }
     for (final s in b.expense) {
-      lines.add('EXPENSES: ${s.name}');
+      lines.add('  ${s.name}');
       for (final r in s.rows) {
-        if (r.label.isNotEmpty || r.amount > 0) {
-          lines.add('  ${r.label.padRight(28)} \$${r.amount.toStringAsFixed(2)}');
-        }
+        if (r.label.isNotEmpty || r.amount > 0)
+          lines.add('    ${r.label.padRight(30)} \$${r.amount.toStringAsFixed(2)}');
       }
-      lines.add('  Subtotal: \$${s.total.toStringAsFixed(2)}');
+      lines.add('    ' + '-' * 38);
+      lines.add('    ${'Subtotal'.padRight(30)} \$${s.total.toStringAsFixed(2)}');
       lines.add('');
     }
-    lines.add('Total Income:    \$${b.totalIncome.toStringAsFixed(2)}');
-    lines.add('Total Expenses:  \$${b.totalExpense.toStringAsFixed(2)}');
-    lines.add('Remaining:       \$${b.remaining.toStringAsFixed(2)}');
+    lines.add('  ' + '-' * 48);
+    lines.add('  ${'Total Income:'.padRight(30)} \$${b.totalIncome.toStringAsFixed(2)}');
+    lines.add('  ${'Total Expenses:'.padRight(30)} \$${b.totalExpense.toStringAsFixed(2)}');
+    lines.add('  ${'Remaining:'.padRight(30)} \$${b.remaining.toStringAsFixed(2)}');
+
     if (debts.isNotEmpty) {
+      final calc        = _calcSnowball(debts, _data.extraPayment);
+      final payoffMonths = calc['payoffMonths'] as List<int>;
+      final totalMonths  = calc['months'] as int;
+      final totalInterest = calc['totalInterest'] as double;
+      final totalDebt   = debts.fold(0.0, (s, d) => s + d.balance);
+      final totalCost   = totalDebt + totalInterest;
+
       lines.add('');
+      lines.add('');
+      lines.add('=' * 52);
       lines.add('DEBT SNOWBALL');
-      for (final d in debts) {
-        lines.add('  ${d.name.padRight(22)} Bal:\$${d.balance.toStringAsFixed(0)}  APR:${d.apr.toStringAsFixed(1)}%  Min:\$${d.minPayment.toStringAsFixed(0)}');
+      lines.add('=' * 52);
+      lines.add('');
+      lines.add('  ${'Total Debt:'.padRight(30)} \$${totalDebt.toStringAsFixed(2)}');
+      lines.add('  ${'Total Interest:'.padRight(30)} \$${totalInterest.toStringAsFixed(2)}');
+      lines.add('  ${'Total Cost:'.padRight(30)} \$${totalCost.toStringAsFixed(2)}');
+      lines.add('  ${'Extra Payment/mo:'.padRight(30)} \$${_data.extraPayment.toStringAsFixed(2)}');
+      lines.add('  ${'Debt-Free In:'.padRight(30)} ${_fmtMonths(totalMonths)}');
+      lines.add('  ${'Debt-Free Date:'.padRight(30)} ${_payoffDate(totalMonths)}');
+      lines.add('');
+
+      if (totalCost > 0) {
+        final pBars = ((totalDebt / totalCost) * 40).round().clamp(0, 40);
+        final iBars = 40 - pBars;
+        lines.add('  Cost Breakdown:');
+        lines.add('  [' + ('#' * pBars) + ('.' * iBars) + ']');
+        lines.add('  # Principal \$${totalDebt.toStringAsFixed(0).padLeft(10)}   '
+          '. Interest \$${totalInterest.toStringAsFixed(0)}');
+        lines.add('');
       }
-      lines.add('  Total Debt:   \$${debts.fold(0.0, (s, d) => s + d.balance).toStringAsFixed(2)}');
-      lines.add('  Extra/month:  \$${_data.extraPayment.toStringAsFixed(2)}');
+
+      lines.add('  PAYOFF TIMELINE');
+      lines.add('  ' + '-' * 52);
+      lines.add('  ${'Debt'.padRight(22)}${'Balance'.padRight(12)}${'Payoff In'.padRight(10)}Date');
+      lines.add('  ' + '-' * 52);
+      for (int i = 0; i < debts.length; i++) {
+        final d  = debts[i];
+        final pm = i < payoffMonths.length ? payoffMonths[i] : 0;
+        final pct  = totalMonths > 0 ? (pm / totalMonths).clamp(0.0, 1.0) : 0.0;
+        final bars = (pct * 20).round();
+        final name = d.name.length > 21 ? d.name.substring(0, 21) : d.name.padRight(22);
+        lines.add('  $name\$${d.balance.toStringAsFixed(0).padLeft(10)} '
+          '${_fmtMonths(pm).padRight(10)} ${_payoffDate(pm)}');
+        lines.add('  APR:${d.apr.toStringAsFixed(1)}%  Min:\$${d.minPayment.toStringAsFixed(0)}  '
+          '[' + ('#' * bars) + ('.' * (20 - bars)) + ']');
+        lines.add('');
+      }
     }
-    lines.add('');
-    lines.add('Generated by Flowe — your data, your device.');
+    lines.add('-' * 52);
+    lines.add('Generated by Flowe -- your data, your device.');
     return _makePDF(lines.join('\n'));
   }
+
 
   Uint8List _makePDF(String content) {
     final lines = content.split('\n');
@@ -274,7 +383,13 @@ class _BudgetScreenState extends State<BudgetScreen> {
     required Future<File> Function(Directory dir) writeFile,
   }) async {
     try {
-      if (Platform.isIOS || Platform.isAndroid) {
+      if (Platform.isIOS) {
+        // iOS: straight to share sheet — it already has Save to Files built in
+        final dir = await getTemporaryDirectory();
+        final file = await writeFile(dir);
+        await Share.shareXFiles([XFile(file.path, mimeType: mime)], subject: filename);
+      } else if (Platform.isAndroid) {
+        // Android: show picker — save to Downloads OR share
         await _mobileExportPicker(filename: filename, mime: mime, writeFile: writeFile);
       } else {
         // Desktop: native save dialog
@@ -284,7 +399,7 @@ class _BudgetScreenState extends State<BudgetScreen> {
         if (loc == null) return;
         final dir = Directory(loc.path.substring(0, loc.path.lastIndexOf('/')));
         final file = await writeFile(dir);
-        await file.copy(loc.path);
+        if (file.path != loc.path) await file.copy(loc.path);
         _showToast('Saved to ${loc.path}');
       }
     } catch (e) { _showToast('Export failed: $e'); }
@@ -455,9 +570,9 @@ class _BudgetScreenState extends State<BudgetScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           decoration: BoxDecoration(color: surface2, border: Border(top: BorderSide(color: border))),
           child: Row(children: [
-            _barBtn('⬇ CSV', _exportCSV),
+            _barBtn(Platform.isIOS ? '↑ CSV' : '⬇ CSV', _exportCSV),
             const SizedBox(width: 8),
-            _barBtn('📄 PDF', _exportPDF),
+            _barBtn(Platform.isIOS ? '↑ PDF' : '⬇ PDF', _exportPDF),
             const SizedBox(width: 8),
             _barBtn('📋 Copy', _copyToClipboard),
           ]),

@@ -173,6 +173,118 @@ class _SnowballScreenState extends State<SnowballScreen> {
     return '✓ Updated min payments from Budget debt rows';
   }
 
+  // ── Balance-over-time chart data (monthly snapshots) ─────────────────────
+  List<Map<String, dynamic>> _calcBalanceOverTime(List<Debt> debts, double extra) {
+    if (debts.isEmpty) return [];
+    var balances = debts.map((d) => d.balance).toList();
+    double total = balances.fold(0.0, (a, b) => a + b);
+    if (total <= 0) return [];
+    final points = <Map<String, dynamic>>[];
+    points.add({'month': 0, 'total': total});
+    for (int month = 1; month <= 600 && total > 0.01; month++) {
+      for (var i = 0; i < debts.length; i++) {
+        if (balances[i] <= 0) continue;
+        final interest = balances[i] * (debts[i].apr / 100 / 12);
+        balances[i] = (balances[i] + interest - debts[i].minPayment).clamp(0.0, double.infinity);
+      }
+      for (var i = 0; i < debts.length; i++) {
+        if (balances[i] > 0) { balances[i] = (balances[i] - extra).clamp(0.0, double.infinity); break; }
+      }
+      total = balances.fold(0.0, (a, b) => a + b);
+      // Sample every 3 months to keep points manageable
+      if (month % 3 == 0 || total <= 0.01) points.add({'month': month, 'total': total});
+    }
+    return points;
+  }
+
+  Widget _buildBalanceChart(List<Debt> debts, double extra, int totalMonths) {
+    final points = _calcBalanceOverTime(debts, extra);
+    if (points.length < 2) return const SizedBox.shrink();
+    final maxBalance = (points.first['total'] as double);
+    if (maxBalance <= 0) return const SizedBox.shrink();
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(color: surface, border: Border.all(color: border),
+        borderRadius: BorderRadius.circular(12)),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+          Text('BALANCE OVER TIME', style: GoogleFonts.dmMono(color: muted, fontSize: 10, letterSpacing: 2)),
+          Text(_fmtMonths(totalMonths) + ' to payoff', style: GoogleFonts.dmMono(color: green, fontSize: 10)),
+        ]),
+        const SizedBox(height: 16),
+        SizedBox(
+          height: 100,
+          child: CustomPaint(
+            size: const Size(double.infinity, 100),
+            painter: _BalanceChartPainter(
+              points: points.map((p) => p['total'] as double).toList(),
+              maxVal: maxBalance,
+              lineColor: blue,
+              fillColor: blue.withOpacity(0.12),
+              gridColor: border,
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+          Text('Now', style: GoogleFonts.dmMono(color: muted, fontSize: 9)),
+          Text(_payoffDate(totalMonths), style: GoogleFonts.dmMono(color: muted, fontSize: 9)),
+        ]),
+      ]),
+    );
+  }
+
+  Widget _buildInterestBreakdown(double totalDebt, double totalInterest) {
+    if (totalDebt <= 0) return const SizedBox.shrink();
+    final totalCost = totalDebt + totalInterest;
+    final principalPct = totalDebt / totalCost;
+    final interestPct = totalInterest / totalCost;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(color: surface, border: Border.all(color: border),
+        borderRadius: BorderRadius.circular(12)),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text('TOTAL COST BREAKDOWN', style: GoogleFonts.dmMono(color: muted, fontSize: 10, letterSpacing: 2)),
+        const SizedBox(height: 12),
+        // Stacked bar
+        ClipRRect(
+          borderRadius: BorderRadius.circular(4),
+          child: Row(children: [
+            Expanded(
+              flex: (principalPct * 1000).round(),
+              child: Container(height: 18, color: blue)),
+            Expanded(
+              flex: (interestPct * 1000).round(),
+              child: Container(height: 18, color: accent2)),
+          ]),
+        ),
+        const SizedBox(height: 10),
+        Row(children: [
+          _breakdownDot(blue, 'Principal', '\$${totalDebt.toStringAsFixed(0)}'),
+          const SizedBox(width: 16),
+          _breakdownDot(accent2, 'Interest', '\$${totalInterest.toStringAsFixed(0)}'),
+          const Spacer(),
+          Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
+            Text('Total Cost', style: GoogleFonts.dmMono(color: muted, fontSize: 9)),
+            Text('\$${totalCost.toStringAsFixed(0)}',
+              style: GoogleFonts.dmMono(color: txt, fontSize: 13, fontWeight: FontWeight.w500)),
+          ]),
+        ]),
+      ]),
+    );
+  }
+
+  Widget _breakdownDot(Color c, String label, String amount) => Row(children: [
+    Container(width: 8, height: 8, decoration: BoxDecoration(color: c, shape: BoxShape.circle)),
+    const SizedBox(width: 5),
+    Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Text(label, style: GoogleFonts.dmMono(color: muted, fontSize: 9)),
+      Text(amount, style: GoogleFonts.dmMono(color: c, fontSize: 12, fontWeight: FontWeight.w500)),
+    ]),
+  ]);
+
   double get _suggestion {
     if (_data.budgets.isEmpty) return 0;
     final last = _data.budgets.values.last;
@@ -204,6 +316,18 @@ class _SnowballScreenState extends State<SnowballScreen> {
           _stat('\$${interest.toStringAsFixed(0)}', 'Interest', accent2),
         ]),
         const SizedBox(height: 12),
+
+        // Balance over time chart
+        if (filtered.isNotEmpty && months > 0) ...[
+          _buildBalanceChart(filtered, extra, months),
+          const SizedBox(height: 12),
+        ],
+
+        // Interest vs principal breakdown
+        if (filtered.isNotEmpty && interest > 0) ...[
+          _buildInterestBreakdown(totalDebt, interest),
+          const SizedBox(height: 12),
+        ],
 
         // Filter chips
         Row(children: [
@@ -540,4 +664,71 @@ class _SnowballScreenState extends State<SnowballScreen> {
         onChanged: (v) => onChanged(double.tryParse(v) ?? 0),
       ),
     ]));
+}
+
+class _BalanceChartPainter extends CustomPainter {
+  final List<double> points;
+  final double maxVal;
+  final Color lineColor;
+  final Color fillColor;
+  final Color gridColor;
+
+  _BalanceChartPainter({
+    required this.points,
+    required this.maxVal,
+    required this.lineColor,
+    required this.fillColor,
+    required this.gridColor,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (points.length < 2 || maxVal <= 0) return;
+
+    // Grid lines
+    final gridPaint = Paint()..color = gridColor..strokeWidth = 0.5;
+    for (int i = 1; i <= 3; i++) {
+      final y = size.height * i / 4;
+      canvas.drawLine(Offset(0, y), Offset(size.width, y), gridPaint);
+    }
+
+    final step = size.width / (points.length - 1);
+
+    // Fill path
+    final fillPath = Path();
+    fillPath.moveTo(0, size.height);
+    for (int i = 0; i < points.length; i++) {
+      final x = i * step;
+      final y = size.height - (points[i] / maxVal * size.height);
+      if (i == 0) fillPath.lineTo(x, y); else fillPath.lineTo(x, y);
+    }
+    fillPath.lineTo(size.width, size.height);
+    fillPath.close();
+    canvas.drawPath(fillPath, Paint()..color = fillColor..style = PaintingStyle.fill);
+
+    // Line
+    final linePaint = Paint()
+      ..color = lineColor
+      ..strokeWidth = 2
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round;
+
+    final linePath = Path();
+    for (int i = 0; i < points.length; i++) {
+      final x = i * step;
+      final y = size.height - (points[i] / maxVal * size.height);
+      if (i == 0) linePath.moveTo(x, y); else linePath.lineTo(x, y);
+    }
+    canvas.drawPath(linePath, linePaint);
+
+    // Dots at start and end
+    final dotPaint = Paint()..color = lineColor..style = PaintingStyle.fill;
+    canvas.drawCircle(Offset(0, size.height - (points.first / maxVal * size.height)), 3, dotPaint);
+    canvas.drawCircle(Offset(size.width, size.height - (points.last / maxVal * size.height)), 3, dotPaint);
+  }
+
+  @override
+  bool shouldRepaint(_BalanceChartPainter old) =>
+    old.points != points || old.maxVal != maxVal;
 }

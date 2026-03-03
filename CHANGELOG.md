@@ -2,6 +2,48 @@
 
 ---
 
+## v1.6.0 — March 2026
+
+### New
+- **PDF export** — Budget screen exports a formatted PDF (save to Downloads or share)
+- **CSV includes snowball** — debt table appended below budget rows in the same export
+- **Snowball charts** — balance-over-time curve + principal vs interest cost breakdown bar
+- **Export picker on mobile** — tap CSV or PDF to choose Save to Files or Share sheet
+- **Copy Backup** — one tap copies a compact encoded backup line to clipboard; paste anywhere (Notes, email, iMessage) to save
+- **Paste & Restore** — paste backup line back on any device to restore all data; no file needed
+- **Android PDF to Downloads** — PDF saves directly to Downloads folder via native channel (no share sheet required)
+- **share_plus** — share sheet on iOS/macOS for all exports
+
+### Fixed
+- Backup format upgraded to `FLOWE2:` (gzip+base64) — lines ~65% shorter than before
+- Legacy `FLOWE1:` backups still restore correctly
+- Restore now shows exact error message instead of generic "failed"
+- `objective_c` dependency bumped to `^9.3.0` to fix pub resolution
+
+### Platform status
+- ✅ Windows — Stable
+- ✅ Linux — Stable
+- ✅ Android — Stable
+- ✅ iOS — Stable
+- 🧪 macOS — Untested
+
+---
+
+## v1.5.0 — February 2026
+
+### New
+- **Android export** — CSV saves directly to Downloads folder via MediaStore (no permissions needed on Android 10+)
+- **iOS export** — CSV visible in Files app under On My iPhone > Flowe
+- **Runtime permissions** — Android 9 and below now properly requests WRITE_EXTERNAL_STORAGE before saving
+- **Font size control** — S / M / L selector in settings
+
+### Fixed
+- iOS build: `objective_c` dependency added to fix native assets error
+- iOS build: Info.plist patched by build script instead of pre-placed (fixes flutter create conflict)
+- Android 9: permission denied on first export now shows dialog and retries
+
+---
+
 ## v1.4.0 — February 2026 *(Flutter Edition)*
 
 Complete rewrite in Flutter. Same features, now a true native cross-platform app.
