@@ -8,7 +8,7 @@
 **No accounts. No subscriptions. Ever.**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg?style=flat-square)](LICENSE)
-[![Version](https://img.shields.io/badge/version-1.6.0-c8f560?style=flat-square)](#changelog)
+[![Version](https://img.shields.io/badge/version-1.7.0-c8f560?style=flat-square)](#changelog)
 [![Flutter](https://img.shields.io/badge/Flutter-3.x-54C5F8?style=flat-square&logo=flutter)](https://flutter.dev)
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20Android%20%7C%20iOS-blue?style=flat-square)](#download)
 
@@ -72,11 +72,11 @@ Flowe is fast, private, and completely offline. Always.
 
 | Platform | File | Status |
 |---|---|---|
-| Windows | `flowe_1.6.0_setup.exe` | ✅ Stable |
-| Linux | `flowe_1.6.0_amd64.deb` | ✅ Stable |
-| Android | `flowe_1.6.0.apk` | ✅ Stable |
-| iOS | `flowe_1.6.0.ipa` | ✅ Stable — sideload via [Sideloadly](https://sideloadly.io) |
-| macOS | `flowe_1.6.0.dmg` | 🧪 Untested — build from source at your own risk |
+| Windows | `flowe_1.7.0_setup.exe` | ✅ Stable |
+| Linux | `flowe_1.7.0_amd64.deb` | ✅ Stable |
+| Android | `flowe_1.7.0.apk` | ✅ Stable |
+| iOS | `flowe_1.7.0.ipa` | ✅ Stable — sideload via [Sideloadly](https://sideloadly.io) |
+| macOS | `flowe_1.7.0.dmg` | ⚠️ Untested — not verified on hardware |
 
 ### ⚠️ About signing & SmartScreen warnings
 
@@ -158,6 +158,7 @@ flowe/
 │       ├── budget_screen.dart    ← monthly budget + CSV/PDF export
 │       ├── snowball_screen.dart  ← debt snowball + charts
 │       ├── networth_screen.dart  ← net worth snapshots
+│       ├── track_screen.dart     ← spending journal + monthly summary
 │       └── events_screen.dart    ← event budgets + split calculator
 ├── assets/                       ← icons for all platforms and sizes
 ├── build_all.bat                 ← Windows: EXE + APK + NSIS installer
