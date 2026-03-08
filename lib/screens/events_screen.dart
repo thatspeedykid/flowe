@@ -13,7 +13,6 @@ class EventsScreen extends StatefulWidget {
 class _EventsScreenState extends State<EventsScreen> {
   late FloData _data;
   int _sel = 0;
-  double _splitTotal = -1;
 
   @override
   void initState() { super.initState(); _data = widget.data; }
@@ -41,7 +40,8 @@ class _EventsScreenState extends State<EventsScreen> {
       budgets: _data.budgets, debts: _data.debts,
       extraPayment: _data.extraPayment, assets: _data.assets,
       liabilities: _data.liabilities, snapshots: _data.snapshots,
-      events: _data.events, darkMode: _data.darkMode, fontSize: _data.fontSize);
+      events: _data.events, transactions: _data.transactions,
+      darkMode: _data.darkMode, fontSize: _data.fontSize);
     setState(() => _data = u);
     widget.onChanged(u);
   }
@@ -88,13 +88,13 @@ class _EventsScreenState extends State<EventsScreen> {
                       items: events.asMap().entries.map((e) => DropdownMenuItem(value: e.key,
                         child: Text(e.value.name.isEmpty ? 'Unnamed' : e.value.name,
                           style: GoogleFonts.dmMono(color: txt, fontSize: 15)))).toList(),
-                      onChanged: (v) => setState(() { _sel = v ?? 0; _splitTotal = -1; }),
+                      onChanged: (v) => setState(() { _sel = v ?? 0; }),
                     ))),
           const SizedBox(width: 8),
           GestureDetector(
             onTap: () {
               _data.events.add(Event(name: 'New Event', cap: 0, categories: []));
-              setState(() { _sel = _data.events.length - 1; _splitTotal = -1; });
+              setState(() { _sel = _data.events.length - 1; });
               _save();
             },
             child: Container(
@@ -108,7 +108,7 @@ class _EventsScreenState extends State<EventsScreen> {
                 if (!await _confirm(context, 'Delete event "${events[selIdx].name}"?')) return;
                 _data.events.removeAt(selIdx);
                 if (_sel >= _data.events.length && _sel > 0) _sel--;
-                _splitTotal = -1;
+
                 _save();
               },
               child: Container(
@@ -140,7 +140,7 @@ class _EventsScreenState extends State<EventsScreen> {
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       // Event name — uses controller so typing doesn't jump focus
       _EventNameField(
-        key: ValueKey('evname_${event.hashCode}'),
+        key: ValueKey('evname_$_sel'),
         initialValue: event.name,
         style: GoogleFonts.playfairDisplay(color: txt, fontSize: 22, fontWeight: FontWeight.w700),
         hintStyle: GoogleFonts.playfairDisplay(color: muted, fontSize: 22),
@@ -148,7 +148,7 @@ class _EventsScreenState extends State<EventsScreen> {
         suffix: Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
           Text('BUDGET', style: GoogleFonts.dmMono(color: muted, fontSize: 9, letterSpacing: 1.5)),
           _EventAmountField(
-            key: ValueKey('evcap_${event.hashCode}'),
+            key: ValueKey('evcap_$_sel'),
             initialValue: event.cap == 0 ? '' : event.cap.toStringAsFixed(2),
             onChanged: (v) { event.cap = double.tryParse(v) ?? 0; _save(); },
             style: GoogleFonts.dmMono(color: accent, fontSize: 15),
@@ -210,7 +210,21 @@ class _EventsScreenState extends State<EventsScreen> {
   );
 
   Widget _catCard(EventCategory cat, int catIdx, Event event) {
-    return Container(
+    return Dismissible(
+      key: ValueKey('evcat_${event.hashCode}_$catIdx'),
+      direction: DismissDirection.endToStart,
+      background: Container(
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.only(right: 24),
+        margin: const EdgeInsets.only(bottom: 12),
+        decoration: BoxDecoration(color: accent2.withOpacity(0.15), borderRadius: BorderRadius.circular(12)),
+        child: Icon(Icons.delete, color: accent2, size: 22)),
+      confirmDismiss: (_) async {
+        final ok = await _confirm(context, 'Delete category "${cat.name}"?');
+        if (ok) { event.categories.removeAt(catIdx); _save(); }
+        return false;
+      },
+      child: Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(color: surface, border: Border.all(color: border),
         borderRadius: BorderRadius.circular(12)),
@@ -244,11 +258,25 @@ class _EventsScreenState extends State<EventsScreen> {
           onPressed: () { cat.items.add(EventItem(label: '', amount: 0)); _save(); },
           child: Text('+ Item', style: GoogleFonts.dmMono(color: muted, fontSize: 13))),
       ]),
+    ),
     );
   }
 
   Widget _itemRow(EventItem item, int idx, EventCategory cat, Event event) {
-    return Padding(
+    return Dismissible(
+      key: ValueKey('evitem_${cat.hashCode}_$idx'),
+      direction: DismissDirection.endToStart,
+      background: Container(
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.only(right: 16),
+        color: accent2.withOpacity(0.15),
+        child: Icon(Icons.delete, color: accent2, size: 18)),
+      confirmDismiss: (_) async {
+        final ok = await _confirm(context, 'Delete "${item.label.isEmpty ? 'this item' : item.label}"?');
+        if (ok) { cat.items.removeAt(idx); _save(); }
+        return false;
+      },
+      child: Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 3),
       child: Row(children: [
         SizedBox(
@@ -283,18 +311,19 @@ class _EventsScreenState extends State<EventsScreen> {
           child: Padding(padding: const EdgeInsets.only(left: 6),
             child: Icon(Icons.close, color: muted, size: 14))),
       ]),
+    ),
     );
   }
 
   Widget _splitCalculator(Event event) {
-    if (_splitTotal < 0) _splitTotal = event.total;
-    // People are stored IN the event so they persist
+    // Use persisted splitTotal; 0 means "use event total"
+    final splitTotal = event.splitTotal > 0 ? event.splitTotal : event.total;
     final people = event.splitPeople;
     final n = people.length;
-    final even = n > 0 ? _splitTotal / n : 0.0;
+    final even = n > 0 ? splitTotal / n : 0.0;
     final collected = people.fold(0.0,
       (s, p) => s + ((p['amount'] as double?) ?? even));
-    final balance = collected - _splitTotal;
+    final balance = collected - splitTotal;
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -305,7 +334,7 @@ class _EventsScreenState extends State<EventsScreen> {
           Text('SPLIT CALCULATOR',
             style: GoogleFonts.dmMono(color: muted, fontSize: 10, letterSpacing: 2)),
           GestureDetector(
-            onTap: () => setState(() => _splitTotal = event.total),
+            onTap: () { event.splitTotal = event.total; _save(); },
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
               decoration: BoxDecoration(border: Border.all(color: border),
@@ -319,11 +348,11 @@ class _EventsScreenState extends State<EventsScreen> {
           SizedBox(
             width: 120,
             child: _SplitTotalField(
-              key: ValueKey('stotal_${_splitTotal.toStringAsFixed(0)}'),
-              initialValue: _splitTotal.toStringAsFixed(2),
+              key: ValueKey('stotal_${event.hashCode}'),
+              initialValue: splitTotal.toStringAsFixed(2),
               style: GoogleFonts.dmMono(color: txt, fontSize: 15),
               muted: muted,
-              onChanged: (v) => setState(() => _splitTotal = double.tryParse(v) ?? _splitTotal),
+              onChanged: (v) { event.splitTotal = double.tryParse(v) ?? splitTotal; _save(); },
             )),
           if (n > 0) ...[
             const Spacer(),
@@ -500,13 +529,22 @@ class _SplitTotalField extends StatefulWidget {
 }
 class _SplitTotalFieldState extends State<_SplitTotalField> {
   late final TextEditingController _c;
+  bool _focused = false;
   @override void initState() { super.initState(); _c = TextEditingController(text: widget.initialValue); }
   @override void dispose() { _c.dispose(); super.dispose(); }
-  @override Widget build(BuildContext context) => TextField(controller: _c, style: widget.style,
-    keyboardType: const TextInputType.numberWithOptions(decimal: true),
-    decoration: InputDecoration(border: InputBorder.none, isDense: true,
-      prefixText: '\$', prefixStyle: GoogleFonts.dmMono(color: widget.muted)),
-    onChanged: widget.onChanged);
+  @override void didUpdateWidget(_SplitTotalField old) {
+    super.didUpdateWidget(old);
+    if (!_focused && widget.initialValue != old.initialValue) {
+      _c.text = widget.initialValue;
+    }
+  }
+  @override Widget build(BuildContext context) => Focus(
+    onFocusChange: (f) => setState(() => _focused = f),
+    child: TextField(controller: _c, style: widget.style,
+      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+      decoration: InputDecoration(border: InputBorder.none, isDense: true,
+        prefixText: '\$', prefixStyle: GoogleFonts.dmMono(color: widget.muted)),
+      onChanged: widget.onChanged));
 }
 
 class _PersonNameField extends StatefulWidget {

@@ -79,28 +79,31 @@ class MonthBudget {
 }
 
 class Debt {
+  String id;
   String name;
+  String last4;
   double balance;
   double minPayment;
   double apr;
   String type;
   double origBalance;
   String dueDate;
-  Debt({required this.name, required this.balance, required this.minPayment,
-        required this.apr, required this.type, this.origBalance = 0, this.dueDate = ''});
+  Debt({String? id, required this.name, this.last4 = '', required this.balance, required this.minPayment,
+        required this.apr, required this.type, this.origBalance = 0, this.dueDate = ''})
+    : id = id ?? DateTime.now().microsecondsSinceEpoch.toString();
 
   Map<String, dynamic> toJson() => {
-    'name': name, 'balance': balance, 'origBalance': origBalance,
+    'id': id, 'name': name, 'last4': last4, 'balance': balance, 'origBalance': origBalance,
     'minPayment': minPayment, 'apr': apr, 'type': type, 'dueDate': dueDate,
   };
   factory Debt.fromJson(Map<String, dynamic> j) => Debt(
+    id: j['id'] ?? DateTime.now().microsecondsSinceEpoch.toString(),
     name: j['name'] ?? '',
+    last4: j['last4'] ?? '',
     balance: (j['balance'] ?? 0).toDouble(),
     origBalance: (j['origBalance'] ?? j['balance'] ?? 0).toDouble(),
-    // HTML uses 'minPmt', Flutter uses 'minPayment'
     minPayment: (j['minPayment'] ?? j['minPmt'] ?? 0).toDouble(),
     apr: (j['apr'] ?? 0).toDouble(),
-    // HTML uses 'cc' for card
     type: _mapDebtType(j['type'] ?? 'card'),
     dueDate: j['dueDate'] ?? '',
   );
@@ -155,25 +158,53 @@ class EventCategory {
 class Event {
   String name;
   double cap;
+  double splitTotal; // persisted split calculator total (0 = use event total)
   List<EventCategory> categories;
-  List<Map<String, dynamic>> splitPeople; // persisted split calculator people
-  Event({required this.name, required this.cap, required this.categories, List<Map<String,dynamic>>? splitPeople})
+  List<Map<String, dynamic>> splitPeople;
+  Event({required this.name, required this.cap, required this.categories,
+         List<Map<String,dynamic>>? splitPeople, this.splitTotal = 0})
     : splitPeople = splitPeople ?? [];
   double get total => categories.fold(0.0, (s, c) => s + c.total);
   Map<String, dynamic> toJson() => {
-    'name': name, 'cap': cap,
+    'name': name, 'cap': cap, 'splitTotal': splitTotal,
     'categories': categories.map((c) => c.toJson()).toList(),
     'splitPeople': splitPeople,
   };
   factory Event.fromJson(Map<String, dynamic> j) => Event(
     name: j['name'] ?? '',
     cap: (j['cap'] ?? 0).toDouble(),
+    splitTotal: (j['splitTotal'] ?? 0).toDouble(),
     categories: (j['categories'] as List? ?? []).map((c) => EventCategory.fromJson(c)).toList(),
     splitPeople: (j['splitPeople'] as List? ?? []).map((p) => Map<String,dynamic>.from(p)).toList(),
   );
 }
 
 // ── Root Data ─────────────────────────────────────────────────────────────────
+// ── Transaction (Track tab) ───────────────────────────────────────────────────
+class Transaction {
+  String id;
+  String date;       // ISO8601 date string e.g. "2025-03-07"
+  String category;   // must match a budget category name
+  String note;
+  double amount;
+  String cardLast4;  // optional last 4 digits of card used
+  Transaction({required this.id, required this.date, required this.category,
+               required this.note, required this.amount, this.cardLast4 = ''});
+
+  Map<String, dynamic> toJson() => {
+    'id': id, 'date': date, 'category': category, 'note': note, 'amount': amount,
+    'cardLast4': cardLast4,
+  };
+  factory Transaction.fromJson(Map<String, dynamic> j) => Transaction(
+    id:       j['id'] ?? DateTime.now().millisecondsSinceEpoch.toString(),
+    date:     j['date'] ?? '',
+    category: j['category'] ?? '',
+    note:     j['note'] ?? '',
+    amount:   (j['amount'] ?? 0).toDouble(),
+    cardLast4: j['cardLast4'] ?? '',
+  );
+}
+
 class FloData {
   Map<String, MonthBudget> budgets;
   List<Debt>        debts;
@@ -182,15 +213,18 @@ class FloData {
   List<NWItem>      liabilities;
   List<NWSnapshot>  snapshots;
   List<Event>       events;
+  List<Transaction> transactions;
   bool              darkMode;
   double            fontSize;
 
   FloData({required this.budgets, required this.debts, required this.extraPayment,
            required this.assets, required this.liabilities, required this.snapshots,
-           required this.events, required this.darkMode, this.fontSize = 15.0});
+           required this.events, List<Transaction>? transactions,
+           required this.darkMode, this.fontSize = 15.0})
+    : transactions = transactions ?? [];
 
   factory FloData.empty() => FloData(budgets: {}, debts: [], extraPayment: 0,
-    assets: [], liabilities: [], snapshots: [], events: [], darkMode: false);
+    assets: [], liabilities: [], snapshots: [], events: [], transactions: [], darkMode: false);
 
   Map<String, dynamic> toJson() => {
     'budgets':      budgets.map((k, v) => MapEntry(k, v.toJson())),
@@ -200,6 +234,7 @@ class FloData {
     'liabilities':  liabilities.map((l) => l.toJson()).toList(),
     'snapshots':    snapshots.map((s) => s.toJson()).toList(),
     'events':       events.map((e) => e.toJson()).toList(),
+    'transactions': transactions.map((t) => t.toJson()).toList(),
     'darkMode':     darkMode,
     'fontSize':     fontSize,
   };
@@ -245,6 +280,7 @@ class FloData {
       liabilities:  liabilities,
       snapshots:    snapshots,
       events:       (j['events'] as List? ?? []).map((e) => Event.fromJson(e)).toList(),
+      transactions: (j['transactions'] as List? ?? []).map((t) => Transaction.fromJson(t)).toList(),
       darkMode:     j['darkMode'] ?? false,
       fontSize:     (j['fontSize'] ?? 15.0).toDouble(),
     );

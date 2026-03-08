@@ -2,6 +2,31 @@
 
 ---
 
+## v1.7.0 — March 2026
+
+### New
+- **Track tab** — replaces Events in the bottom nav; log real transactions against your budget categories
+- **Spending bars** — each expense category shows a progress bar: spent vs budgeted, colour turns red when over
+- **Over-budget badge** — categories exceeding their budget get a red OVER pill
+- **Transaction log** — per-transaction list with date, category tag, note, and amount; tap any row to edit or delete
+- **Category detail sheet** — tap a category card to see all its transactions for the month
+- **Events mode pill** — toggle within Track tab to access the Event planner (full Events screen integration coming in v1.8)
+- **Transaction model** — new `Transaction` class stored in `data.json`, fully backward-compatible (existing saves load fine)
+
+### Fixed
+- **Upgrade-safe installs** — installing a new version over an old one never deletes data on any platform
+- **Windows installer** — kills running flowe.exe before overwriting files; uninstall message now tells users where data lives
+- **Linux DEB** — added `prerm` (stops running instance) and `postrm` (refreshes desktop cache); neither script ever touches `~/.local/share/flowe/`
+- **Android backup** — `allowBackup="true"` + `backup_rules.xml` + `data_extraction_rules.xml` added; data.json is now included in Google Drive backup and device-to-device transfers (Android 6+, Android 12+)
+- **Old flo → Flowe data migration** (Windows + Linux) — now checks if new data.json already exists before copying, preventing overwrite on re-install
+
+### Internal
+- `Transaction` added to `data.dart` with `toJson`/`fromJson` and safe migration (missing field defaults to empty list)
+- All screens updated to pass `transactions` through `FloData` copy constructors
+- pubspec bumped to `1.7.0+9`
+
+---
+
 ## v1.6.0 — March 2026
 
 ### New

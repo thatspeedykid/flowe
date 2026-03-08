@@ -1,12 +1,12 @@
 @echo off
-setlocal
+setlocal enabledelayedexpansion
 cd /d "%~dp0"
-set VERSION=1.6.0
+set VERSION=1.7.0
 title Flowe v%VERSION% - Build All
 echo.
 echo ==========================================
 echo   Flowe v%VERSION% - Build All Platforms
-echo   Windows EXE + Android APK
+echo   Windows Installer + Android APK + Linux
 echo ==========================================
 echo.
 
@@ -22,89 +22,127 @@ if errorlevel 1 (
 echo [1/5] Getting dependencies...
 call flutter pub get
 if errorlevel 1 goto :fail
-echo [OK] Dependencies ready.
+echo   [OK] Dependencies ready.
 echo.
 
 :: ── Step 2: Platform setup + icon injection ───────────────────────────────────
 echo [2/5] Setting up platforms and injecting icons...
+
+:: Delete main.cpp so flutter create regenerates it clean (prevents C++ corruption)
+if exist "windows\runner\main.cpp" del "windows\runner\main.cpp" >nul 2>&1
+
 call flutter create --platforms=windows,android . >nul 2>&1
-:: Patch Android package ID from com.example.flowe to com.privacychase.flowe
-if exist "androidppuild.gradle" (
-    powershell -Command "(gc 'android\app\build.gradle') -replace 'com\.example\.flowe', 'com.privacychase.flowe' | sc 'android\app\build.gradle'"
-)
-if exist "androidpp\src\main\AndroidManifest.xml" (
-    powershell -Command "(gc 'android\app\src\main\AndroidManifest.xml') -replace 'com\.example\.flowe', 'com.privacychase.flowe' | sc 'android\app\src\main\AndroidManifest.xml'"
-)
+
+:: Patch Android package ID (covers both groovy and kotlin gradle)
+powershell -NoProfile -Command "foreach ($f in @('android\app\build.gradle','android\app\build.gradle.kts')) { if (Test-Path $f) { (gc $f) -replace 'com\.example\.flowe','com.privacychase.flowe' | sc $f } }" >nul 2>&1
+powershell -NoProfile -Command "(gc 'android\app\src\main\AndroidManifest.xml') -replace 'com\.example\.flowe','com.privacychase.flowe' | sc 'android\app\src\main\AndroidManifest.xml'" >nul 2>&1
 echo   [OK] Android package ID patched to com.privacychase.flowe
 
-:: Fix window title in Windows runner
+:: Patch Runner.rc — app name, version info, publisher (use Python to avoid bat/ps escaping hell)
 if exist "windows\runner\Runner.rc" (
-    powershell -Command "(gc 'windows\runner\Runner.rc') -replace 'flowe', 'Flowe' | sc 'windows\runner\Runner.rc'"
+    python -c "import re,sys; f='windows/runner/Runner.rc'; c=open(f,encoding='utf-8-sig').read(); c=c.replace('flowe.exe','Flowe.exe'); c=re.sub(r'VALUE \"FileDescription\",\s*\"[^\"]*\"','VALUE \"FileDescription\", \"Flowe - Personal Finance Tracker\"',c); c=re.sub(r'VALUE \"ProductName\",\s*\"[^\"]*\"','VALUE \"ProductName\", \"Flowe\"',c); c=re.sub(r'VALUE \"CompanyName\",\s*\"[^\"]*\"','VALUE \"CompanyName\", \"PrivacyChase\"',c); c=re.sub(r'VALUE \"LegalCopyright\",\s*\"[^\"]*\"','VALUE \"LegalCopyright\", \"Copyright 2026 PrivacyChase. MIT License.\"',c); open(f,'w',encoding='utf-8').write(c)"
 )
-if exist "windows\runner\main.cpp" (
-    powershell -Command "(gc 'windows\runner\main.cpp') -replace '\"flowe\"', '\"Flowe\"' | sc 'windows\runner\main.cpp'"
-)
+
 call inject_icons.bat
 echo.
 
-:: ── Step 3: Windows EXE ───────────────────────────────────────────────────────
+:: ── Step 3: Windows build ─────────────────────────────────────────────────────
 echo [3/5] Building Windows release...
 call flutter build windows --release
 if errorlevel 1 goto :fail
 
-:: Flutter uses app name from pubspec — find whatever .exe was built
-set EXE_PATH=build\windows\x64\runner\Release
-set EXE_FOUND=0
-if exist "%EXE_PATH%\flowe.exe" set EXE_FOUND=1
-if exist "%EXE_PATH%\flo.exe"   set EXE_FOUND=1
-if "%EXE_FOUND%"=="0" (
-    echo [ERROR] EXE not found. Contents of %EXE_PATH%:
-    dir "%EXE_PATH%\*.exe" 2>nul
+set RELEASE_DIR=build\windows\x64\runner\Release
+if not exist "%RELEASE_DIR%\flowe.exe" (
+    echo [ERROR] flowe.exe not found in %RELEASE_DIR%
     goto :fail
 )
-echo [OK] Windows EXE built.
-echo.
+echo   [OK] Windows EXE built.
 
-:: ── Step 4: Android APK (optional — skipped if Android SDK not configured) ────
-echo [4/5] Building Android APK...
-call flutter build apk --release 2>nul
-if exist "build\app\outputs\flutter-apk\app-release.apk" (
-    if not exist "installers" mkdir installers
-    copy /Y "build\app\outputs\flutter-apk\app-release.apk" "installers\flowe_%VERSION%.apk" >nul
-    echo [OK] Android APK: installers\flowe_%VERSION%.apk
-) else (
-    echo [INFO] Android APK skipped (Android SDK not configured or build failed)
-)
-echo.
-
-:: ── Step 5: NSIS Installer ────────────────────────────────────────────────────
-echo [5/5] Building Windows installer...
+:: Build installer with NSIS if available, otherwise fall back to ZIP
 where makensis >nul 2>&1
-if errorlevel 1 (
-    echo [INFO] NSIS not found - skipping. Get it: https://nsis.sourceforge.io
-    goto :done
-)
-if not exist "flowe_setup.nsi" (
-    echo [INFO] flowe_setup.nsi not found - skipping.
-    goto :done
-)
-if not exist "installers" mkdir installers
-makensis flowe_setup.nsi
-if errorlevel 1 goto :fail
-if exist "installers\flowe_%VERSION%_setup.exe" (
-    echo [OK] Installer: installers\flowe_%VERSION%_setup.exe
+if not errorlevel 1 (
+    echo   Building installer with NSIS...
+    makensis flowe_setup.nsi
+    if exist "installers\flowe_%VERSION%_setup.exe" (
+        echo   [OK] Windows Installer: installers\flowe_%VERSION%_setup.exe
+    ) else (
+        echo   [WARN] NSIS ran but installer not found - check flowe_setup.nsi
+    )
 ) else (
-    echo [WARN] Installer may have been built with different version in .nsi
+    echo   [INFO] NSIS not found - building ZIP instead.
+    echo   Get NSIS from https://nsis.sourceforge.io for a proper installer.
+    set WIN_ZIP=installers\flowe_%VERSION%_windows.zip
+    if exist "!WIN_ZIP!" del "!WIN_ZIP!"
+    powershell -NoProfile -Command "Compress-Archive -Path '%RELEASE_DIR%\*' -DestinationPath 'installers\flowe_%VERSION%_windows.zip'"
+    if exist "installers\flowe_%VERSION%_windows.zip" (
+        echo   [OK] Windows ZIP: installers\flowe_%VERSION%_windows.zip
+    )
+)
+echo.
+
+:: ── Step 4: Android APK ───────────────────────────────────────────────────────
+echo [4/5] Building Android APK...
+call flutter build apk --release
+if exist "build\app\outputs\flutter-apk\app-release.apk" (
+    copy /Y "build\app\outputs\flutter-apk\app-release.apk" "installers\flowe_%VERSION%.apk" >nul
+    echo   [OK] Android APK: installers\flowe_%VERSION%.apk
+) else (
+    echo   [WARN] Android APK not produced - check Android SDK / JAVA_HOME
+)
+echo.
+
+:: ── Step 5: Linux .deb via WSL ────────────────────────────────────────────────
+echo [5/5] Building Linux .deb via WSL...
+where wsl >nul 2>&1
+if errorlevel 1 (
+    echo   [SKIP] WSL not found.
+    goto :done
+)
+wsl -d Ubuntu -- echo "WSL_OK" >nul 2>&1
+if errorlevel 1 (
+    echo   [SKIP] Ubuntu WSL not set up. Run setup_wsl_flutter.bat first.
+    goto :done
+)
+wsl -d Ubuntu -- bash -c "test -f ~/flutter/bin/flutter" >nul 2>&1
+if errorlevel 1 (
+    echo   [SKIP] Flutter not in WSL. Run setup_wsl_flutter.bat first.
+    goto :done
+)
+
+:: Convert path to WSL format - write a small launcher to avoid space issues
+set WIN_PATH=%~dp0
+set WIN_PATH=%WIN_PATH:~0,-1%
+for /f "tokens=1,2 delims=:" %%a in ("%WIN_PATH%") do (set DRV=%%a & set REST=%%b)
+for /f %%i in ('powershell -NoProfile -Command "'%DRV%'.ToLower()"') do set DRV_LOWER=%%i
+set REST_UNIX=%REST:\=/%
+set WSL_PATH=/mnt/%DRV_LOWER%%REST_UNIX%
+
+:: Copy the build script into WSL tmp and run it with the project path
+wsl -d Ubuntu -- cp "%WSL_PATH%/wsl_build_linux.sh" /tmp/wsl_build_linux.sh
+wsl -d Ubuntu -- chmod +x /tmp/wsl_build_linux.sh
+echo   Building Linux release (this takes a few minutes)...
+wsl -d Ubuntu -- bash /tmp/wsl_build_linux.sh "%WSL_PATH%"
+
+set DEB=installers\flowe_%VERSION%_linux_amd64.deb
+if exist "%DEB%" (
+    echo   [OK] Linux .deb: %DEB%
+) else (
+    echo   [WARN] Linux .deb not found - check output above for errors
 )
 echo.
 
 :done
 echo ==========================================
-echo   BUILD COMPLETE  ->  installers\
+echo   BUILD COMPLETE  -^>  installers\
 echo ==========================================
 echo.
-echo Contents of installers\:
-dir "installers\" 2>nul
+echo   Built on this machine:
+dir "installers\" /b 2>nul
+echo.
+echo   macOS + iOS (requires a Mac):
+echo   Copy project to Mac, then run: bash build_all_mac.sh
+echo   Produces: flowe_%VERSION%.dmg + flowe_%VERSION%.ipa
+echo   Output goes to: ~/Documents/flowe-builds/
 echo.
 pause
 exit /b 0

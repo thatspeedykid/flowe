@@ -1,6 +1,6 @@
 name: flowe
 description: Flowe — personal finance tracker. Budget, snowball debt, net worth, events.
-version: 1.6.0+8
+version: 1.7.0+9
 
 environment:
   sdk: '>=3.0.0 <4.0.0'

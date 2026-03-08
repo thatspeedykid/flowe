@@ -35,7 +35,8 @@ class _SnowballScreenState extends State<SnowballScreen> {
   void _save(List<Debt> debts, double extra) {
     final u = FloData(budgets: _data.budgets, debts: debts, extraPayment: extra,
       assets: _data.assets, liabilities: _data.liabilities, snapshots: _data.snapshots,
-      events: _data.events, darkMode: _data.darkMode);
+      events: _data.events, transactions: _data.transactions,
+      darkMode: _data.darkMode, fontSize: _data.fontSize);
     setState(() => _data = u);
     widget.onChanged(u);
   }
@@ -418,16 +419,12 @@ class _SnowballScreenState extends State<SnowballScreen> {
             const Spacer(),
             SizedBox(
               width: 120,
-              child: TextFormField(
-                key: ValueKey('extra_$extra'),
-                initialValue: extra == 0 ? '' : extra.toStringAsFixed(2),
+              child: _StableNumberField(
+                value: extra,
+                prefix: r'$',
                 style: GoogleFonts.dmMono(color: accent, fontSize: 16),
-                decoration: InputDecoration(hintText: '0.00', hintStyle: GoogleFonts.dmMono(color: muted),
-                  border: InputBorder.none, isDense: true,
-                  prefixText: '\$', prefixStyle: GoogleFonts.dmMono(color: muted)),
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                textAlign: TextAlign.right,
-                onChanged: (v) => _save(debts, double.tryParse(v) ?? 0),
+                hintStyle: GoogleFonts.dmMono(color: muted),
+                onChanged: (v) => _save(debts, v),
               )),
           ]),
         ),
@@ -466,7 +463,8 @@ class _SnowballScreenState extends State<SnowballScreen> {
                   padding: const EdgeInsets.only(bottom: 12),
                   child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                     Row(children: [
-                      Expanded(child: Text(e.value.name,
+                      Expanded(child: Text(
+                        e.value.last4.isNotEmpty ? '${e.value.name} (···${e.value.last4})' : e.value.name,
                         style: GoogleFonts.dmMono(color: txt, fontSize: 12))),
                       Text(_payoffDate(pm),
                         style: GoogleFonts.dmMono(color: col, fontSize: 12)),
@@ -521,7 +519,7 @@ class _SnowballScreenState extends State<SnowballScreen> {
     final dueColor = _dueBadgeColor(debt.dueDate);
 
     return Dismissible(
-      key: ValueKey('debt_$idx'),
+      key: ValueKey('debt_${debt.id}'),
       direction: DismissDirection.endToStart,
       background: Container(alignment: Alignment.centerRight, padding: const EdgeInsets.only(right: 16),
         color: accent2.withOpacity(0.15), child: Icon(Icons.delete, color: accent2, size: 18)),
@@ -545,27 +543,38 @@ class _SnowballScreenState extends State<SnowballScreen> {
       onDismissed: (_) { final d = [...debts]..removeAt(idx); _save(d, extra); },
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(color: surface, border: Border.all(color: border),
           borderRadius: BorderRadius.circular(12)),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Row(children: [
+          // ── Row 1: name  |  LAST 4 · type dropdown ──────────────────────
+          Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
             Expanded(
-              child: TextFormField(
-                key: ValueKey('dn_$idx'),
-                initialValue: debt.name,
+              child: _StableTextField(
+                key: ValueKey('name_${debt.id}'),
+                value: debt.name,
                 style: GoogleFonts.dmMono(color: txt, fontSize: 14, fontWeight: FontWeight.w500),
-                decoration: const InputDecoration(border: InputBorder.none, isDense: true),
                 onChanged: (v) { debt.name = v; _save(debts, extra); },
               ),
             ),
-            if (dueColor != Colors.transparent)
-              Container(
-                margin: const EdgeInsets.only(right: 6),
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(color: dueColor.withOpacity(0.15),
-                  border: Border.all(color: dueColor), borderRadius: BorderRadius.circular(4)),
-                child: Text('DUE SOON', style: GoogleFonts.dmMono(color: dueColor, fontSize: 9))),
+            // Last 4
+            Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
+              Text('LAST 4', style: GoogleFonts.dmMono(color: muted, fontSize: 8, letterSpacing: 1)),
+              SizedBox(
+                width: 44,
+                child: _StableTextField(
+                  key: ValueKey('last4_${debt.id}'),
+                  value: debt.last4,
+                  style: GoogleFonts.dmMono(color: muted, fontSize: 12),
+                  hint: '····',
+                  hintColor: const Color(0xFF444444),
+                  maxLength: 4,
+                  keyboardType: TextInputType.number,
+                  onChanged: (v) { final d = v.replaceAll(RegExp(r'[^0-9]'), ''); debt.last4 = d.length > 4 ? d.substring(0, 4) : d; _save(debts, extra); },
+                ),
+              ),
+            ]),
+            const SizedBox(width: 8),
             DropdownButton<String>(
               value: ['card','loan','medical','other'].contains(debt.type) ? debt.type : 'card',
               dropdownColor: surface2, underline: const SizedBox(), isDense: true,
@@ -580,25 +589,32 @@ class _SnowballScreenState extends State<SnowballScreen> {
             ),
           ]),
           const SizedBox(height: 10),
-          Row(children: [
-            _field('Balance',  debt.balance,    '\$', (v) { debt.balance = v; if (debt.origBalance < v) debt.origBalance = v; _save(debts, extra); }),
-            const SizedBox(width: 8),
-            _field('Min Pay',  debt.minPayment, '\$', (v) { debt.minPayment = v; _save(debts, extra); }),
-            const SizedBox(width: 8),
-            _field('APR %',    debt.apr,        '',  (v) { debt.apr = v; _save(debts, extra); }),
+          // ── Row 2: Balance / Min Pay / APR — labels on top, values below ──
+          Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Expanded(child: _field('Balance', debt.balance, '\$',
+              (v) { debt.balance = v; if (debt.origBalance < v) debt.origBalance = v; _save(debts, extra); },
+              fieldKey: ValueKey('bal_${debt.id}'))),
+            const SizedBox(width: 12),
+            Expanded(child: _field('Min Pay', debt.minPayment, '\$',
+              (v) { debt.minPayment = v; _save(debts, extra); },
+              fieldKey: ValueKey('min_${debt.id}'))),
+            const SizedBox(width: 12),
+            Expanded(child: _field('APR %', debt.apr, '',
+              (v) { debt.apr = v; _save(debts, extra); },
+              fieldKey: ValueKey('apr_${debt.id}'), suffix: '%')),
           ]),
           const SizedBox(height: 8),
-          // Due date with calendar picker
+          // ── Row 3: Due date + DUE SOON badge ──────────────────────────────
           Row(children: [
-            Text('Due date: ', style: GoogleFonts.dmMono(color: muted, fontSize: 11)),
+            Text('Due: ', style: GoogleFonts.dmMono(color: muted, fontSize: 11)),
             Text(
-              debt.dueDate != null && debt.dueDate!.isNotEmpty ? debt.dueDate! : 'Not set',
+              debt.dueDate.isNotEmpty ? debt.dueDate : 'Not set',
               style: GoogleFonts.dmMono(color: muted, fontSize: 11)),
             const SizedBox(width: 8),
             GestureDetector(
               onTap: () async {
                 DateTime initial = DateTime.now();
-                try { if (debt.dueDate != null && debt.dueDate!.isNotEmpty) initial = DateTime.parse(debt.dueDate!); } catch(_) {}
+                try { if (debt.dueDate.isNotEmpty) initial = DateTime.parse(debt.dueDate); } catch(_) {}
                 final picked = await showDatePicker(
                   context: context,
                   initialDate: initial,
@@ -618,25 +634,34 @@ class _SnowballScreenState extends State<SnowballScreen> {
                 }
               },
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  border: Border.all(color: border), borderRadius: BorderRadius.circular(4)),
+                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                decoration: BoxDecoration(border: Border.all(color: border), borderRadius: BorderRadius.circular(4)),
                 child: Row(mainAxisSize: MainAxisSize.min, children: [
-                  Icon(Icons.calendar_today, size: 11, color: muted),
-                  const SizedBox(width: 4),
+                  Icon(Icons.calendar_today, size: 10, color: muted),
+                  const SizedBox(width: 3),
                   Text('Pick', style: GoogleFonts.dmMono(color: muted, fontSize: 10)),
                 ]))),
-            if (debt.dueDate != null && debt.dueDate!.isNotEmpty) ...[
+            if (debt.dueDate.isNotEmpty) ...[
               const SizedBox(width: 4),
               GestureDetector(
                 onTap: () { debt.dueDate = ''; _save(debts, extra); },
                 child: Icon(Icons.close, size: 12, color: muted)),
             ],
+            // DUE SOON badge lives here next to the date
+            if (dueColor != Colors.transparent) ...[
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                decoration: BoxDecoration(color: dueColor.withOpacity(0.15),
+                  border: Border.all(color: dueColor), borderRadius: BorderRadius.circular(4)),
+                child: Text('DUE SOON', style: GoogleFonts.dmMono(color: dueColor, fontSize: 8))),
+            ],
           ]),
-          const SizedBox(height: 6),
+          const SizedBox(height: 8),
+          // ── Progress bar ──────────────────────────────────────────────────
           ClipRRect(borderRadius: BorderRadius.circular(4),
             child: LinearProgressIndicator(value: paid, backgroundColor: border,
-              valueColor: AlwaysStoppedAnimation(blue), minHeight: 6)),
+              valueColor: AlwaysStoppedAnimation(blue), minHeight: 5)),
           const SizedBox(height: 4),
           Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
             Text('${(paid * 100).toStringAsFixed(0)}% paid off',
@@ -649,21 +674,118 @@ class _SnowballScreenState extends State<SnowballScreen> {
     );
   }
 
-  Widget _field(String label, double val, String prefix, ValueChanged<double> onChanged, {String suffix = ''}) =>
-    Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+  Widget _field(String label, double val, String prefix, ValueChanged<double> onChanged, {String suffix = '', Key? fieldKey}) =>
+    Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Text(label, style: GoogleFonts.dmMono(color: muted, fontSize: 10, letterSpacing: 1)),
-      TextFormField(
-        key: ValueKey('f_${label}_$val'),
-        initialValue: val == 0 ? '' : val.toStringAsFixed(2),
-        style: GoogleFonts.dmMono(color: txt, fontSize: 15),
-        decoration: InputDecoration(hintText: '0', hintStyle: GoogleFonts.dmMono(color: muted, fontSize: 15),
-          border: InputBorder.none, isDense: true,
-          prefixText: prefix, prefixStyle: GoogleFonts.dmMono(color: muted, fontSize: 15),
-          suffixText: suffix, suffixStyle: GoogleFonts.dmMono(color: muted, fontSize: 15)),
-        keyboardType: const TextInputType.numberWithOptions(decimal: true),
-        onChanged: (v) => onChanged(double.tryParse(v) ?? 0),
+      const SizedBox(height: 2),
+      Row(children: [
+        if (prefix.isNotEmpty)
+          Text(prefix, style: GoogleFonts.dmMono(color: muted, fontSize: 15)),
+        Expanded(
+          child: _StableNumberField(
+            key: fieldKey,
+            value: val,
+            prefix: '',
+            suffix: suffix,
+            style: GoogleFonts.dmMono(color: txt, fontSize: 15),
+            hintStyle: GoogleFonts.dmMono(color: muted, fontSize: 15),
+            onChanged: onChanged,
+          ),
+        ),
+      ]),
+    ]);
+}
+
+// ── Stable text field — controller-based, never resets on rebuild ─────────
+class _StableTextField extends StatefulWidget {
+  final String value;
+  final TextStyle style;
+  final ValueChanged<String> onChanged;
+  final String? hint;
+  final Color? hintColor;
+  final int? maxLength;
+  final TextInputType? keyboardType;
+  const _StableTextField({super.key, required this.value, required this.style,
+    required this.onChanged, this.hint, this.hintColor, this.maxLength, this.keyboardType});
+  @override State<_StableTextField> createState() => _StableTextFieldState();
+}
+class _StableTextFieldState extends State<_StableTextField> {
+  late TextEditingController _c;
+  @override void initState() { super.initState(); _c = TextEditingController(text: widget.value); }
+  @override void dispose() { _c.dispose(); super.dispose(); }
+  @override void didUpdateWidget(_StableTextField old) {
+    super.didUpdateWidget(old);
+    if (widget.value != _c.text && !_c.selection.isValid) {
+      _c.text = widget.value;
+    }
+  }
+  @override Widget build(BuildContext context) => TextField(
+    controller: _c,
+    style: widget.style,
+    maxLength: widget.maxLength,
+    keyboardType: widget.keyboardType,
+    buildCounter: widget.maxLength != null ? (_, {required currentLength, required isFocused, maxLength}) => const SizedBox.shrink() : null,
+    decoration: InputDecoration(
+      border: InputBorder.none, isDense: true, counterText: '',
+      hintText: widget.hint,
+      hintStyle: widget.hint != null ? GoogleFonts.dmMono(color: widget.hintColor ?? const Color(0xFF444444), fontSize: 12) : null,
+    ),
+    onChanged: widget.onChanged,
+  );
+}
+
+// ── Stable number field — controller-based ────────────────────────────────
+class _StableNumberField extends StatefulWidget {
+  final double value;
+  final String prefix;
+  final String suffix;
+  final TextStyle style;
+  final TextStyle hintStyle;
+  final ValueChanged<double> onChanged;
+  const _StableNumberField({
+    super.key,
+    required this.value, required this.style, required this.hintStyle,
+    required this.onChanged, this.prefix = '', this.suffix = '',
+  });
+  @override State<_StableNumberField> createState() => _StableNumberFieldState();
+}
+class _StableNumberFieldState extends State<_StableNumberField> {
+  late TextEditingController _c;
+  bool _focused = false;
+  @override void initState() {
+    super.initState();
+    _c = TextEditingController(text: widget.value == 0 ? '' : widget.value.toStringAsFixed(2));
+  }
+  @override void dispose() { _c.dispose(); super.dispose(); }
+  @override void didUpdateWidget(_StableNumberField old) {
+    super.didUpdateWidget(old);
+    // Only sync from outside when not focused (user not typing)
+    if (!_focused && widget.value != old.value) {
+      _c.text = widget.value == 0 ? '' : widget.value.toStringAsFixed(2);
+    }
+  }
+  @override Widget build(BuildContext context) => Focus(
+    onFocusChange: (f) => setState(() => _focused = f),
+    child: Row(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.center, children: [
+      if (widget.prefix.isNotEmpty)
+        Text(widget.prefix, style: widget.hintStyle),
+      Flexible(
+        child: TextField(
+          controller: _c,
+          style: widget.style,
+          textAlign: TextAlign.left,
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          decoration: InputDecoration(
+            hintText: '0.00', hintStyle: widget.hintStyle,
+            border: InputBorder.none, isDense: true, contentPadding: EdgeInsets.zero,
+          ),
+          onChanged: (v) => widget.onChanged(double.tryParse(v) ?? 0),
+        ),
       ),
-    ]));
+      if (widget.suffix.isNotEmpty)
+        Text(widget.suffix, style: widget.hintStyle),
+    ]),
+  );
 }
 
 class _BalanceChartPainter extends CustomPainter {

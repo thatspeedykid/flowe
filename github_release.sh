@@ -15,7 +15,7 @@
 # ─────────────────────────────────────────────────────────────────
 set -e
 
-VERSION="1.6.0"
+VERSION="1.7.0"
 TAG="v${VERSION}"
 REPO="thatspeedykid/flowe"
 
@@ -151,38 +151,36 @@ echo ""
 # ── Step 6: Create GitHub release ────────────────────────────────────────────
 echo "[6/6] Creating GitHub release $TAG..."
 
-RELEASE_NOTES='## Flowe v1.6.0 — PrivacyChase
+RELEASE_NOTES='## Flowe v1.7.0 — PrivacyChase
+
+### New
+- 📊 **Track tab** — log real transactions against your budget categories
+- 💸 **Spending bars** — see how much of each budget category you'\''ve spent at a glance
+- 🔴 **Over-budget alerts** — categories turn red with an OVER badge when exceeded
+- 🧾 **Transaction log** — log purchases with category, amount, note, and date; tap to edit or delete
+- 🗂️ **Category drill-down** — tap any category to see all its transactions for the month
+- 📅 **Events mode** — access the event planner via pill toggle inside the Track tab
 
 ### Fixed
-- 🔤 **Font size buttons** now actually change text size throughout the app
-- ⌨️ **Events tab typing** — letters no longer jump to the next field on every keystroke
-- 💾 **Split calculator people** now save and persist between sessions
-- 📅 **Due dates** replaced text input with a tap-to-open calendar picker
-- 📊 **APR %** label now sits right next to the field instead of pushed far right
-- 🗑️ **Delete confirmations** — "Are you sure?" prompt before deleting anything
-- 🖼️ **App icon** in taskbar and app menu now shows flo bar chart icon
-
-### Also in this release
-- `build_all.bat` — one command builds Windows EXE + Android APK on Windows
-- `build_all.sh` — one command builds Linux DEB + Android APK on Linux
-- Old Python/HTML source moved to `legacy/` folder
+- ✅ **Upgrade-safe installs** — all platforms now preserve your data when installing over a previous version
+- 🔒 **Android backup** — data.json is included in Google Drive backup and device transfers (Android 6+)
+- 🪟 **Windows installer** — upgrade kills running instance before overwriting files; uninstall message clarified
+- 🐧 **Linux DEB** — added `prerm`/`postrm` scripts; upgrade and remove never touch `~/.local/share/flowe/`
 
 ### Install
 
 **Linux**
 ```bash
 git clone https://github.com/thatspeedykid/flowe
-cd flo && bash build_all.sh
+cd flowe && bash build_all.sh
 ```
 
 **Windows** — run `build_all.bat`
 
-**Upgrade from v1.0–v1.3:** Your data migrates automatically on first launch.
+**Upgrade from any previous version:** Your data is kept automatically. No action needed.
 
 ---
-MIT License · [Buy me a coffee ☕](https://www.paypal.com/paypalme/speeddevilx)'
-
-# Build the gh release command
+MIT License · Built by PrivacyChase — privacychase.com'
 GH_CMD="gh release create \"$TAG\" --title \"Flowe $TAG\" --notes \"$RELEASE_NOTES\" --repo \"$REPO\""
 for a in "${ARTIFACTS[@]}"; do
   GH_CMD="$GH_CMD \"$a\""

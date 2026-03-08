@@ -1,91 +1,73 @@
-; Flowe v1.6.0 NSIS Installer Script — PrivacyChase
-
-!define APP_NAME        "Flowe"
-!define APP_VERSION     "1.6.0"
-!define APP_PUBLISHER   "PrivacyChase"
-!define APP_URL         "https://privacychase.com"
-!define APP_EXE         "flowe.exe"
-!define INSTALL_DIR     "$LOCALAPPDATA\Flowe"
-!define UNINSTALL_KEY   "Software\Microsoft\Windows\CurrentVersion\Uninstall\Flowe"
+; Flowe NSIS Installer
+!define APP_NAME "Flowe"
+!define APP_VERSION "1.7.0"
+!define PUBLISHER "PrivacyChase"
+!define APP_URL "https://privacychase.com"
+!define INSTALL_DIR "$PROGRAMFILES64\Flowe"
+!define UNINSTALL_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\Flowe"
 
 Name "${APP_NAME} ${APP_VERSION}"
 OutFile "installers\flowe_${APP_VERSION}_setup.exe"
 InstallDir "${INSTALL_DIR}"
-InstallDirRegKey HKCU "${UNINSTALL_KEY}" "InstallLocation"
-RequestExecutionLevel user
-Unicode True
+InstallDirRegKey HKLM "${UNINSTALL_KEY}" "InstallLocation"
+RequestExecutionLevel admin
 SetCompressor /SOLID lzma
 
-; Installer icon (shows on the setup.exe itself)
-Icon "assets\app_icon.ico"
-UninstallIcon "assets\app_icon.ico"
+; Modern UI
+!include "MUI2.nsh"
+!define MUI_ICON "assets\app_icon.ico"
+!define MUI_UNICON "assets\app_icon.ico"
+!define MUI_ABORTWARNING
 
-; ── Pages ──────────────────────────────────────────────────────────────────────
-Page directory
-Page instfiles
-UninstPage uninstConfirm
-UninstPage instfiles
+; Welcome page
+!define MUI_WELCOMEPAGE_TITLE "Flowe ${APP_VERSION}"
+!define MUI_WELCOMEPAGE_TEXT "What's new in v1.7.0:$\r$\n$\r$\n- Transactions rebuilt: month nav, spending summary, grouped by date$\r$\n- Budget tab now includes Transactions as a sub-tab$\r$\n- Snowball, Net Worth, Events each get their own top-level tab$\r$\n- Split calculator total now saves correctly$\r$\n- Font size no longer resets when adding/deleting rows$\r$\n- Status bar and gesture bar overlap fixed on Android/iOS$\r$\n- Debt card field alignment fixed$\r$\n$\r$\nYour data is safe — installing over an existing version will not delete anything."
 
-; ── Install ────────────────────────────────────────────────────────────────────
+!insertmacro MUI_PAGE_WELCOME
+!insertmacro MUI_PAGE_DIRECTORY
+!insertmacro MUI_PAGE_INSTFILES
+!define MUI_FINISHPAGE_RUN "$INSTDIR\flowe.exe"
+!define MUI_FINISHPAGE_RUN_TEXT "Launch Flowe"
+!insertmacro MUI_PAGE_FINISH
+
+!insertmacro MUI_UNPAGE_CONFIRM
+!insertmacro MUI_UNPAGE_INSTFILES
+
+!insertmacro MUI_LANGUAGE "English"
+
 Section "Install"
-  ; ── Migrate from old flo installation ──────────────────────────────────────
-  ; If old flo is installed, run its uninstaller silently first
-  ReadRegStr $0 HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\flo" "UninstallString"
-  StrCmp $0 "" +3
-    ExecWait '"$0" /S'
-    Sleep 1000
+    SetOutPath "$INSTDIR"
+    File /r "build\windows\x64\runner\Release\*.*"
 
-  ; Copy old flo data to Flowe location if it exists
-  StrCpy $0 "$APPDATA\flo\flo\data.json"
-  IfFileExists $0 0 +4
-    CreateDirectory "$APPDATA\flowe\flowe"
-    CopyFiles /SILENT $0 "$APPDATA\flowe\flowe\data.json"
-    DetailPrint "Migrated data from flo to Flowe"
-  SetOutPath "$INSTDIR"
-  SetOverwrite on
+    ; Start menu shortcut
+    CreateDirectory "$SMPROGRAMS\Flowe"
+    CreateShortcut "$SMPROGRAMS\Flowe\Flowe.lnk" "$INSTDIR\flowe.exe"
+    CreateShortcut "$SMPROGRAMS\Flowe\Uninstall Flowe.lnk" "$INSTDIR\Uninstall.exe"
 
-  ; Copy entire release bundle
-  File /r /x "*.pdb" "build\windows\x64\runner\Release\*.*"
+    ; Desktop shortcut
+    CreateShortcut "$DESKTOP\Flowe.lnk" "$INSTDIR\flowe.exe"
 
-  ; Replace the icon on the installed flowe.exe using our .ico
-  ; (the exe already has it embedded from build step — this is a safety copy)
-  SetOutPath "$INSTDIR"
+    ; Write uninstaller
+    WriteUninstaller "$INSTDIR\Uninstall.exe"
 
-  ; Shortcuts
-  CreateDirectory "$SMPROGRAMS\Flowe"
-  CreateShortcut "$SMPROGRAMS\Flowe\Flowe.lnk"           "$INSTDIR\${APP_EXE}" "" "$INSTDIR\${APP_EXE}" 0
-  CreateShortcut "$SMPROGRAMS\Flowe\Uninstall Flowe.lnk" "$INSTDIR\uninstall.exe"
-  CreateShortcut "$DESKTOP\Flowe.lnk"                    "$INSTDIR\${APP_EXE}" "" "$INSTDIR\${APP_EXE}" 0
-
-  ; Uninstaller
-  WriteUninstaller "$INSTDIR\uninstall.exe"
-
-  ; Add/Remove Programs
-  WriteRegStr   HKCU "${UNINSTALL_KEY}" "DisplayName"      "${APP_NAME}"
-  WriteRegStr   HKCU "${UNINSTALL_KEY}" "DisplayVersion"   "${APP_VERSION}"
-  WriteRegStr   HKCU "${UNINSTALL_KEY}" "Publisher"        "${APP_PUBLISHER}"
-  WriteRegStr   HKCU "${UNINSTALL_KEY}" "URLInfoAbout"     "${APP_URL}"
-  WriteRegStr   HKCU "${UNINSTALL_KEY}" "InstallLocation"  "$INSTDIR"
-  WriteRegStr   HKCU "${UNINSTALL_KEY}" "UninstallString"  "$INSTDIR\uninstall.exe"
-  WriteRegStr   HKCU "${UNINSTALL_KEY}" "DisplayIcon"      "$INSTDIR\${APP_EXE}"
-  WriteRegDWORD HKCU "${UNINSTALL_KEY}" "NoModify"         1
-  WriteRegDWORD HKCU "${UNINSTALL_KEY}" "NoRepair"         1
+    ; Add/Remove Programs entry
+    WriteRegStr HKLM "${UNINSTALL_KEY}" "DisplayName" "${APP_NAME}"
+    WriteRegStr HKLM "${UNINSTALL_KEY}" "DisplayVersion" "${APP_VERSION}"
+    WriteRegStr HKLM "${UNINSTALL_KEY}" "Publisher" "${PUBLISHER}"
+    WriteRegStr HKLM "${UNINSTALL_KEY}" "URLInfoAbout" "${APP_URL}"
+    WriteRegStr HKLM "${UNINSTALL_KEY}" "URLUpdateInfo" "${APP_URL}"
+    WriteRegStr HKLM "${UNINSTALL_KEY}" "Comments" "Budget, snowball debt payoff, net worth, event split calculator, spending journal. v${APP_VERSION}: rebuilt Transactions, new tab layout, split calculator save fix, font size fix, safe area fixes."
+    WriteRegStr HKLM "${UNINSTALL_KEY}" "DisplayIcon" "$INSTDIR\flowe.exe"
+    WriteRegStr HKLM "${UNINSTALL_KEY}" "InstallLocation" "$INSTDIR"
+    WriteRegStr HKLM "${UNINSTALL_KEY}" "UninstallString" "$INSTDIR\Uninstall.exe"
+    WriteRegDWORD HKLM "${UNINSTALL_KEY}" "NoModify" 1
+    WriteRegDWORD HKLM "${UNINSTALL_KEY}" "NoRepair" 1
 SectionEnd
 
-; ── Uninstall ──────────────────────────────────────────────────────────────────
 Section "Uninstall"
-  ; Delete only app files — never touch user data in %APPDATA%\flowe
-  Delete "$INSTDIR\flowe.exe"
-  Delete "$INSTDIR\flutter_windows.dll"
-  Delete "$INSTDIR\uninstall.exe"
-  RMDir /r "$INSTDIR\data"
-  ; Only remove install dir if empty after cleanup
-  RMDir "$INSTDIR"
-
-  Delete "$SMPROGRAMS\Flowe\Flowe.lnk"
-  Delete "$SMPROGRAMS\Flowe\Uninstall Flowe.lnk"
-  RMDir  "$SMPROGRAMS\Flowe"
-  Delete "$DESKTOP\Flowe.lnk"
-  DeleteRegKey HKCU "${UNINSTALL_KEY}"
-  MessageBox MB_OK "Flowe has been uninstalled.$\n$\nYour data at %APPDATA%\flowe\ was kept."
+    Delete "$INSTDIR\Uninstall.exe"
+    RMDir /r "$INSTDIR"
+    Delete "$DESKTOP\Flowe.lnk"
+    RMDir /r "$SMPROGRAMS\Flowe"
+    DeleteRegKey HKLM "${UNINSTALL_KEY}"
 SectionEnd

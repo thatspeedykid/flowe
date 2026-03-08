@@ -12,6 +12,7 @@ import 'screens/budget_screen.dart';
 import 'screens/snowball_screen.dart';
 import 'screens/networth_screen.dart';
 import 'screens/events_screen.dart';
+import 'screens/track_screen.dart';
 
 // Platform channel for Android MediaStore Downloads access
 const _platform = MethodChannel('com.flowe/storage');
@@ -113,7 +114,7 @@ class _FloShellState extends State<_FloShell> {
     Icons.account_balance_wallet_outlined,
     Icons.ac_unit,
     Icons.show_chart,
-    Icons.event_note_outlined,
+    Icons.calendar_month_outlined,
   ];
   static const _tabLabels = ['Budget', 'Snowball', 'Net Worth', 'Events'];
 
@@ -127,7 +128,7 @@ class _FloShellState extends State<_FloShell> {
     final muted   = dark ? const Color(0xFF666666) : const Color(0xFF7a7060);
 
     final screens = [
-      BudgetScreen(data: _cur, onChanged: _save),
+      BudgetShell(data: _cur, onChanged: _save),
       SnowballScreen(data: _cur, onChanged: _save),
       NetWorthScreen(data: _cur, onChanged: _save),
       EventsScreen(data: _cur, onChanged: _save),
@@ -136,7 +137,7 @@ class _FloShellState extends State<_FloShell> {
     final width = MediaQuery.of(context).size.width;
     final isTablet = width >= 600;
     final topPad = (Platform.isIOS || Platform.isAndroid)
-        ? MediaQuery.of(context).padding.top + 8
+        ? MediaQuery.of(context).viewPadding.top + 8
         : 10.0;
 
     // ── Tablet / desktop sidebar layout ───────────────────────────────────
@@ -197,7 +198,7 @@ class _FloShellState extends State<_FloShell> {
               }),
               const Spacer(),
               Padding(
-                padding: EdgeInsets.fromLTRB(8, 0, 8, MediaQuery.of(context).padding.bottom + 12),
+                padding: EdgeInsets.fromLTRB(8, 0, 8, MediaQuery.of(context).viewPadding.bottom + 12),
                 child: Column(children: [
                   // Coffee — desktop only, not tablets
                   if (!Platform.isIOS && !Platform.isAndroid) ...[
@@ -239,7 +240,13 @@ class _FloShellState extends State<_FloShell> {
             ]),
           ),
           Container(width: 1, color: border),
-          Expanded(child: screens[widget.tab]),
+          Expanded(
+            child: Column(children: [
+              SizedBox(height: (Platform.isIOS || Platform.isAndroid)
+                  ? MediaQuery.of(context).viewPadding.top : 0),
+              Expanded(child: screens[widget.tab]),
+            ]),
+          ),
         ]),
       );
     }
@@ -308,7 +315,7 @@ class _FloShellState extends State<_FloShell> {
           padding: EdgeInsets.only(
             left: 16, right: 16, top: 6,
             bottom: (Platform.isIOS || Platform.isAndroid)
-                ? MediaQuery.of(context).padding.bottom + 6 : 6),
+                ? MediaQuery.of(context).viewPadding.bottom + 8 : 6),
           decoration: BoxDecoration(
             color: surface2,
             border: Border(top: BorderSide(color: border))),
@@ -563,7 +570,7 @@ class _FloShellState extends State<_FloShell> {
           Padding(
             padding: const EdgeInsets.all(16),
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text('Flowe v1.6.0', style: GoogleFonts.dmMono(color: muted, fontSize: 12)),
+              Text('Flowe v1.7.0', style: GoogleFonts.dmMono(color: muted, fontSize: 12)),
               const SizedBox(height: 2),
               Text('Windows · Linux · Android · iOS · macOS',
                 style: GoogleFonts.dmMono(color: muted, fontSize: 10)),
@@ -574,5 +581,61 @@ class _FloShellState extends State<_FloShell> {
         ]),
       ),
     );
+  }
+}
+
+// ── BudgetShell — hosts Budget + Transactions as sub-tabs ──────────────────
+class BudgetShell extends StatefulWidget {
+  final FloData data;
+  final ValueChanged<FloData> onChanged;
+  const BudgetShell({super.key, required this.data, required this.onChanged});
+  @override
+  State<BudgetShell> createState() => _BudgetShellState();
+}
+
+class _BudgetShellState extends State<BudgetShell> {
+  int _sub = 0; // 0 = Budget, 1 = Transactions
+
+  @override
+  Widget build(BuildContext context) {
+    final dark    = widget.data.darkMode;
+    final accent  = dark ? const Color(0xFFc8f560) : const Color(0xFF5a8a00);
+    final muted   = dark ? const Color(0xFF777777) : const Color(0xFF7a7060);
+    final surface2= dark ? const Color(0xFF222222) : const Color(0xFFeeebe2);
+    final border  = dark ? const Color(0xFF2e2e2e) : const Color(0xFFd4cfc6);
+
+    final subScreens = [
+      BudgetScreen(data: widget.data, onChanged: widget.onChanged),
+      TrackScreen(data: widget.data, onChanged: widget.onChanged),
+    ];
+    final subLabels = ['Budget', 'Transactions'];
+    final subIcons  = [Icons.account_balance_wallet_outlined, Icons.receipt_long_outlined];
+
+    return Column(children: [
+      Container(
+        color: surface2,
+        child: Row(children: List.generate(2, (i) {
+          final sel = i == _sub;
+          return Expanded(child: GestureDetector(
+            onTap: () => setState(() => _sub = i),
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: 10),
+              decoration: BoxDecoration(border: Border(bottom: BorderSide(
+                color: sel ? accent : Colors.transparent, width: 2))),
+              child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                Icon(subIcons[i], size: 14, color: sel ? accent : muted),
+                const SizedBox(width: 6),
+                Text(subLabels[i], style: GoogleFonts.dmMono(
+                  fontSize: 11, letterSpacing: 0.8,
+                  color: sel ? accent : muted,
+                  fontWeight: sel ? FontWeight.w600 : FontWeight.w400)),
+              ]),
+            ),
+          ));
+        })),
+      ),
+      Container(height: 1, color: border),
+      Expanded(child: subScreens[_sub]),
+    ]);
   }
 }

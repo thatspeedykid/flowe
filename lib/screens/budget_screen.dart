@@ -40,7 +40,7 @@ class _BudgetScreenState extends State<BudgetScreen> {
     budgets[_key] = b;
     final u = FloData(budgets: budgets, debts: _data.debts, extraPayment: _data.extraPayment,
       assets: _data.assets, liabilities: _data.liabilities, snapshots: _data.snapshots,
-      events: _data.events, darkMode: _data.darkMode, fontSize: _data.fontSize);
+      events: _data.events, transactions: _data.transactions, darkMode: _data.darkMode, fontSize: _data.fontSize);
     setState(() => _data = u);
     widget.onChanged(u);
   }
@@ -640,11 +640,11 @@ class _BudgetScreenState extends State<BudgetScreen> {
                 onChanged: (v) { sec.name = v; _save(b); })),
               Text('\$${sec.total.toStringAsFixed(2)}', style: GoogleFonts.dmMono(color: muted, fontSize: 13)),
             ])),
-          Padding(padding: const EdgeInsets.fromLTRB(16, 6, 50, 2),
+          Padding(padding: const EdgeInsets.fromLTRB(16, 6, 36, 2),
             child: Row(children: [
               Expanded(child: Text('LABEL', style: GoogleFonts.dmMono(color: muted, fontSize: 9, letterSpacing: 1.5))),
-              SizedBox(width: 95, child: Text('TYPE (tap)', textAlign: TextAlign.center, style: GoogleFonts.dmMono(color: muted, fontSize: 9, letterSpacing: 1.5))),
-              SizedBox(width: 85, child: Text('AMOUNT', textAlign: TextAlign.right, style: GoogleFonts.dmMono(color: muted, fontSize: 9, letterSpacing: 1.5))),
+              SizedBox(width: 80, child: Text('TYPE', textAlign: TextAlign.center, style: GoogleFonts.dmMono(color: muted, fontSize: 9, letterSpacing: 1.5))),
+              SizedBox(width: 90, child: Text('AMOUNT', textAlign: TextAlign.right, style: GoogleFonts.dmMono(color: muted, fontSize: 9, letterSpacing: 1.5))),
             ])),
           ...sec.rows.asMap().entries.map((e) => _rowTile(e.value, e.key, sec, b)),
           TextButton(onPressed: () { sec.rows.add(BudgetRow(label: '', amount: 0)); _save(b); },
@@ -676,34 +676,44 @@ class _BudgetScreenState extends State<BudgetScreen> {
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 3),
         child: Row(children: [
+          // Label
           Expanded(child: TextFormField(key: ValueKey('rl_${sec.name}_$rowIdx'), initialValue: row.label,
-            style: GoogleFonts.dmMono(color: txt, fontSize: 15),
-            decoration: InputDecoration(hintText: 'Label', hintStyle: GoogleFonts.dmMono(color: muted, fontSize: 15), border: InputBorder.none, isDense: true),
+            style: GoogleFonts.dmMono(color: txt, fontSize: 14),
+            decoration: InputDecoration(hintText: 'Label', hintStyle: GoogleFonts.dmMono(color: muted, fontSize: 14), border: InputBorder.none, isDense: true),
             onChanged: (v) { row.label = v; _save(b); })),
+          // Tag — no box, just a small colored pill with dot
           GestureDetector(
             onTap: () { row.tag = nextTag; _save(b); },
-            child: Container(width: 95,
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-              margin: const EdgeInsets.symmetric(horizontal: 4),
-              decoration: BoxDecoration(
-                color: tag.isEmpty ? Colors.transparent : tagColor.withOpacity(0.12),
-                border: Border.all(color: tag.isEmpty ? const Color(0xFF444444) : tagColor),
-                borderRadius: BorderRadius.circular(4)),
-              child: Text(label, textAlign: TextAlign.center,
-                style: GoogleFonts.dmMono(color: tag.isEmpty ? const Color(0xFF666666) : tagColor, fontSize: 11),
-                overflow: TextOverflow.ellipsis))),
-          SizedBox(width: 85, child: TextFormField(key: ValueKey('ra_${sec.name}_$rowIdx'),
+            child: Container(
+              width: 80,
+              margin: const EdgeInsets.symmetric(horizontal: 6),
+              child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                Container(width: 6, height: 6,
+                  decoration: BoxDecoration(
+                    color: tag.isEmpty ? const Color(0xFF444444) : tagColor,
+                    shape: BoxShape.circle)),
+                const SizedBox(width: 4),
+                Text(tag.isEmpty ? 'type' : label.replaceAll(RegExp(r'^.\s'), ''),
+                  style: GoogleFonts.dmMono(
+                    color: tag.isEmpty ? const Color(0xFF555555) : tagColor,
+                    fontSize: 10),
+                  overflow: TextOverflow.ellipsis),
+              ]),
+            )),
+          // Amount
+          SizedBox(width: 90, child: TextFormField(key: ValueKey('ra_${sec.name}_$rowIdx'),
             initialValue: row.amount == 0 ? '' : row.amount.toStringAsFixed(2),
-            style: GoogleFonts.dmMono(color: txt, fontSize: 15),
-            decoration: InputDecoration(hintText: '0.00', hintStyle: GoogleFonts.dmMono(color: muted, fontSize: 15),
+            style: GoogleFonts.dmMono(color: txt, fontSize: 14),
+            decoration: InputDecoration(hintText: '0.00', hintStyle: GoogleFonts.dmMono(color: muted, fontSize: 14),
               border: InputBorder.none, isDense: true,
-              prefixText: '\$', prefixStyle: GoogleFonts.dmMono(color: muted, fontSize: 15)),
+              prefixText: '\$', prefixStyle: GoogleFonts.dmMono(color: muted, fontSize: 14)),
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
             textAlign: TextAlign.right,
             onChanged: (v) { row.amount = double.tryParse(v) ?? 0; _save(b); })),
+          // Delete
           GestureDetector(
             onTap: () async { if (await _confirm(context, 'Delete row?')) { sec.rows.removeAt(rowIdx); _save(b); } },
-            child: Padding(padding: const EdgeInsets.only(left: 6), child: Icon(Icons.close, color: muted, size: 15))),
+            child: Padding(padding: const EdgeInsets.only(left: 6), child: Icon(Icons.close, color: muted, size: 14))),
         ]),
       ),
     );

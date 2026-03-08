@@ -1,5 +1,5 @@
 #!/bin/bash
-VERSION="1.6.0"
+VERSION="1.7.0"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 cd "$SCRIPT_DIR"
 
@@ -63,22 +63,26 @@ with open('ios/Runner/Info.plist','rb') as f:
     p = plistlib.load(f)
 p['UIFileSharingEnabled'] = True
 p['LSSupportsOpeningDocumentsInPlace'] = True
+p['NSHumanReadableCopyright'] = 'Copyright © 2026 PrivacyChase. MIT License.'
+p['CFBundleGetInfoString'] = 'Flowe $VERSION — Budget, debt snowball, net worth, events. privacychase.com'
 with open('ios/Runner/Info.plist','wb') as f:
     plistlib.dump(p, f)
-print('  [OK] iOS file sharing enabled')
+print('  [OK] iOS plist patched')
 "
 fi
 
-# Disable Impeller (fixes blank window on VMware macOS)
+# Disable Impeller (fixes blank window on VMware macOS) + add metadata
 if [ -f "macos/Runner/Info.plist" ]; then
   python3 -c "
 import plistlib
 with open('macos/Runner/Info.plist','rb') as f:
     p = plistlib.load(f)
 p['FLTEnableImpeller'] = False
+p['NSHumanReadableCopyright'] = 'Copyright © 2026 PrivacyChase. MIT License.'
+p['CFBundleGetInfoString'] = 'Flowe $VERSION — Budget, debt snowball, net worth, events. privacychase.com'
 with open('macos/Runner/Info.plist','wb') as f:
     plistlib.dump(p, f)
-print('  [OK] Impeller disabled')
+print('  [OK] macOS plist patched')
 "
 fi
 

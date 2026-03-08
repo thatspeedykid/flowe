@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>com.privacychase.flowe</id>
+  <name>Flowe</name>
+  <summary>Take control of your money</summary>
+  <description>
+    <p>
+      Flowe is a privacy-first personal finance tracker. All data stays on your device — nothing is sent to any server.
+    </p>
+    <p>Features:</p>
+    <ul>
+      <li>Monthly budget planner with income and expense categories</li>
+      <li>Debt snowball calculator with payoff timeline</li>
+      <li>Net worth tracker with asset and liability snapshots</li>
+      <li>Event split calculator for group expenses</li>
+      <li>Spending journal with monthly summaries</li>
+    </ul>
+  </description>
+  <launchable type="desktop-id">flowe.desktop</launchable>
+  <url type="homepage">https://privacychase.com</url>
+  <metadata_license>MIT</metadata_license>
+  <project_license>MIT</project_license>
+  <developer_name>PrivacyChase</developer_name>
+  <provides>
+    <binary>flowe</binary>
+  </provides>
+  <categories>
+    <category>Office</category>
+    <category>Finance</category>
+  </categories>
+  <releases>
+    <release version="1.7.0" date="2026-03-07">
+      <description>
+        <ul>
+          <li>Transactions rebuilt: month navigator, spending summary, grouped by date</li>
+          <li>Tab restructure: Budget and Transactions sub-tabs, Snowball/Net Worth/Events top-level</li>
+          <li>Split calculator total now saves correctly</li>
+          <li>Font size no longer resets when adding or deleting rows</li>
+          <li>Status bar and gesture bar overlap fixed on Android and iOS</li>
+          <li>Debt card field alignment fixed</li>
+          <li>Linux package renamed from flo to flowe with automatic data migration</li>
+        </ul>
+      </description>
+    </release>
+    <release version="1.6.0" date="2026-01-15">
+      <description>
+        <ul>
+          <li>Events tab with split calculator</li>
+          <li>Dark and light mode</li>
+          <li>CSV and PDF export</li>
+        </ul>
+      </description>
+    </release>
+  </releases>
+  <content_rating type="oars-1.1"/>
+</component>

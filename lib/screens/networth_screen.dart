@@ -35,7 +35,8 @@ class _NetWorthScreenState extends State<NetWorthScreen> {
   void _save() {
     final u = FloData(budgets: _data.budgets, debts: _data.debts,
       extraPayment: _data.extraPayment, assets: _data.assets, liabilities: _data.liabilities,
-      snapshots: _data.snapshots, events: _data.events, darkMode: _data.darkMode);
+      snapshots: _data.snapshots, events: _data.events, transactions: _data.transactions,
+      darkMode: _data.darkMode, fontSize: _data.fontSize);
     setState(() => _data = u);
     widget.onChanged(u);
   }
