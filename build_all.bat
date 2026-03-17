@@ -1,7 +1,7 @@
 @echo off
 setlocal enabledelayedexpansion
 cd /d "%~dp0"
-set VERSION=1.7.0
+set VERSION=1.7.5
 title Flowe v%VERSION% - Build All
 echo.
 echo ==========================================

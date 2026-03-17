@@ -1,7 +1,7 @@
 #!/bin/bash
 # Called from build_all.bat via WSL — builds the .deb without interactive prompts
 set -e
-VERSION="1.7.0"
+VERSION="1.7.5"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 cd "$SCRIPT_DIR"
 

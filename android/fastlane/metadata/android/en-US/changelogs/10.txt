@@ -1,0 +1,1 @@
+v1.7.5: Fixed app icon (no more Flutter logo), branded splash screen, settings panel now links to privacychase.com.

@@ -2,6 +2,16 @@
 
 ---
 
+## v1.7.5 — March 2026
+
+### Fixed
+- **App icon** — replaced default Flutter icon with Flowe icon on all platforms (Android, iOS, Windows, Linux, macOS)
+- **Splash screen** — replaced Flutter default splash with Flowe branded splash on Android and iOS
+- **Settings panel** — removed platform list, added privacychase.com link
+- **Version bump** — 1.7.0 → 1.7.5
+
+---
+
 ## v1.7.0 — March 2026
 
 ### New
