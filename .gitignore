@@ -1,0 +1,9 @@
+
+# Signing credentials — never commit these
+*.jks
+*.p12
+*.pfx
+*.mobileprovision
+*.provisionprofile
+android/key.properties
+*.b64

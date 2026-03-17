@@ -1,0 +1,33 @@
+name: flowe
+description: Flowe — personal finance tracker. Budget, snowball debt, net worth, events.
+version: 1.7.0+9
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  google_fonts: ^6.1.0
+  path_provider: ^2.1.2
+  file_selector: 1.0.3
+  objective_c: ^9.3.0
+  share_plus: ^10.0.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/icon.png
+    - assets/icon_dark.png
+    - assets/icon_512.png
+    - assets/icon_128.png
+    - assets/icon_64.png
+    - assets/icon_48.png
+    - assets/icon_32.png
+    - assets/icon_16.png

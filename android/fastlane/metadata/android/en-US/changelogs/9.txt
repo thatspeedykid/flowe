@@ -1,0 +1,1 @@
+Transactions rebuilt: month navigator, spending summary card, grouped by date. Budget tab now includes Transactions sub-tab. Snowball, Net Worth, Events are each top-level tabs. Split calculator total now saves. Font size no longer resets when editing rows. Status bar and gesture bar overlap fixed. Debt card field alignment fixed.
