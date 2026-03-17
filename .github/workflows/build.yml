@@ -107,6 +107,9 @@ jobs:
       - name: Install NSIS
         run: choco install nsis -y
 
+      - name: Create installers directory
+        run: mkdir -p installers
+
       - name: Build installer
         run: '& "C:\Program Files (x86)\NSIS\Bin\makensis.exe" flowe_setup.nsi'
 
