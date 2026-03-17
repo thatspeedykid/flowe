@@ -101,7 +101,10 @@ jobs:
         run: flutter create --platforms=windows .
 
       - name: Inject icons
-        run: bash inject_icons.sh
+        run: |
+          mkdir -p windows/runner/resources
+          cp assets/app_icon.ico windows/runner/resources/app_icon.ico
+          bash inject_icons.sh
 
       - name: Patch Runner.rc
         run: python patch_rc.py
