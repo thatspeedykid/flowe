@@ -36,6 +36,20 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
+      - name: Generate Android platform files
+        run: flutter create --platforms=android .
+
+      - name: Fix Android v2 embedding in AndroidManifest
+        run: |
+          MANIFEST="android/app/src/main/AndroidManifest.xml"
+          # Remove any v1 embedding meta-data tag
+          sed -i '/<meta-data.*flutterEmbedding.*value="1"/d' "$MANIFEST"
+          # Ensure v2 embedding is set
+          if ! grep -q 'flutterEmbedding' "$MANIFEST"; then
+            sed -i 's|<application|<application|' "$MANIFEST"
+          fi
+          echo "AndroidManifest checked"
+
       - name: Setup signing
         env:
           KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
@@ -81,6 +95,9 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
+      - name: Generate Windows platform files
+        run: flutter create --platforms=windows .
+
       - name: Patch Runner.rc
         run: python patch_rc.py
 
@@ -122,6 +139,9 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
+      - name: Generate Linux platform files
+        run: flutter create --platforms=linux .
+
       - name: Build Linux
         run: flutter build linux --release
 
@@ -156,6 +176,9 @@ jobs:
 
       - name: Install dependencies
         run: flutter pub get
+
+      - name: Generate macOS and iOS platform files
+        run: flutter create --platforms=macos,ios .
 
       - name: Install Apple certificates
         env:
