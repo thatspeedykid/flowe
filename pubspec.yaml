@@ -18,27 +18,8 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^3.0.0
-  flutter_launcher_icons: ^0.14.1
   flutter_native_splash: ^2.4.1
 
-flutter_launcher_icons:
-  android: true
-  ios: true
-  image_path: "assets/icon_1024.png"
-  min_sdk_android: 21
-  remove_alpha_ios: true
-  web:
-    generate: false
-  windows:
-    generate: true
-    image_path: "assets/icon_1024.png"
-    icon_size: 48
-  macos:
-    generate: true
-    image_path: "assets/icon_1024.png"
-  linux:
-    generate: true
-    image_path: "assets/icon_1024.png"
 
 flutter_native_splash:
   color: "#ffffff"
@@ -47,7 +28,6 @@ flutter_native_splash:
   android: true
   ios: true
   web: false
-
 
 flutter:
   uses-material-design: true

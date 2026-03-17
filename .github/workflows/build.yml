@@ -40,8 +40,11 @@ jobs:
       - name: Generate Android platform files
         run: flutter create --platforms=android .
 
-      - name: Generate Android icons
-        run: dart run flutter_launcher_icons
+      - name: Inject icons
+        run: bash inject_icons.sh
+
+      - name: Generate splash
+        run: dart run flutter_native_splash:create
 
       - name: Fix Android v2 embedding
         run: |
@@ -97,8 +100,8 @@ jobs:
       - name: Generate Windows platform files
         run: flutter create --platforms=windows .
 
-      - name: Generate Windows icons
-        run: dart run flutter_launcher_icons
+      - name: Inject icons
+        run: bash inject_icons.sh
 
       - name: Patch Runner.rc
         run: python patch_rc.py
@@ -147,8 +150,8 @@ jobs:
       - name: Generate Linux platform files
         run: flutter create --platforms=linux .
 
-      - name: Generate Linux icons
-        run: dart run flutter_launcher_icons
+      - name: Inject icons
+        run: bash inject_icons.sh
 
       - name: Build Linux
         run: flutter build linux --release
@@ -188,10 +191,11 @@ jobs:
       - name: Generate macOS and iOS platform files
         run: flutter create --platforms=macos,ios .
 
-      - name: Generate macOS and iOS icons and splash
-        run: |
-          dart run flutter_launcher_icons
-          dart run flutter_native_splash:create
+      - name: Inject icons
+        run: bash inject_icons.sh
+
+      - name: Generate splash
+        run: dart run flutter_native_splash:create
 
       - name: Install Apple certificates
         env:
