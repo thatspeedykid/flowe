@@ -37,13 +37,13 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
+      - name: Generate Android platform files
+        run: flutter create --platforms=android .
+
       - name: Generate icons and splash
         run: |
           dart run flutter_launcher_icons
           dart run flutter_native_splash:create
-
-      - name: Generate Android platform files
-        run: flutter create --platforms=android .
 
       - name: Fix Android v2 embedding in AndroidManifest
         run: |
@@ -101,11 +101,11 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
-      - name: Generate icons and splash
-        run: dart run flutter_launcher_icons
-
       - name: Generate Windows platform files
         run: flutter create --platforms=windows .
+
+      - name: Generate icons and splash
+        run: dart run flutter_launcher_icons
 
       - name: Patch Runner.rc
         run: python patch_rc.py
@@ -151,11 +151,11 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
-      - name: Generate icons and splash
-        run: dart run flutter_launcher_icons
-
       - name: Generate Linux platform files
         run: flutter create --platforms=linux .
+
+      - name: Generate icons and splash
+        run: dart run flutter_launcher_icons
 
       - name: Build Linux
         run: flutter build linux --release
@@ -194,6 +194,12 @@ jobs:
 
       - name: Generate macOS and iOS platform files
         run: flutter create --platforms=macos,ios .
+
+      - name: Ensure iOS asset directories exist
+        run: |
+          mkdir -p ios/Runner/Assets.xcassets/AppIcon.appiconset
+          mkdir -p ios/Runner/Assets.xcassets/LaunchImage.imageset
+          mkdir -p macos/Runner/Assets.xcassets/AppIcon.appiconset
 
       - name: Generate icons and splash
         run: |
