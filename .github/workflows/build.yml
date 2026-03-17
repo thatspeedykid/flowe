@@ -41,7 +41,7 @@ jobs:
         run: flutter create --platforms=android .
 
       - name: Generate Android icons
-        run: dart run flutter_launcher_icons -f pubspec_android.yaml
+        run: dart run flutter_launcher_icons
 
       - name: Fix Android v2 embedding
         run: |
@@ -98,7 +98,7 @@ jobs:
         run: flutter create --platforms=windows .
 
       - name: Generate Windows icons
-        run: dart run flutter_launcher_icons -f pubspec_windows.yaml
+        run: dart run flutter_launcher_icons
 
       - name: Patch Runner.rc
         run: python patch_rc.py
@@ -148,7 +148,7 @@ jobs:
         run: flutter create --platforms=linux .
 
       - name: Generate Linux icons
-        run: dart run flutter_launcher_icons -f pubspec_linux.yaml
+        run: dart run flutter_launcher_icons
 
       - name: Build Linux
         run: flutter build linux --release
@@ -190,7 +190,7 @@ jobs:
 
       - name: Generate macOS and iOS icons and splash
         run: |
-          dart run flutter_launcher_icons -f pubspec_apple.yaml
+          dart run flutter_launcher_icons
           dart run flutter_native_splash:create
 
       - name: Install Apple certificates

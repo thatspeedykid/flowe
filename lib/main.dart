@@ -574,7 +574,7 @@ class _FloShellState extends State<_FloShell> {
               Text('Flowe v1.7.5', style: GoogleFonts.dmMono(color: muted, fontSize: 12)),
               const SizedBox(height: 2),
               GestureDetector(
-                onTap: () => _launchUrl('https://privacychase.com'),
+                onTap: () => _openUrl('https://privacychase.com'),
                 child: Text('privacychase.com',
                   style: GoogleFonts.dmMono(color: muted, fontSize: 10,
                     decoration: TextDecoration.underline)),

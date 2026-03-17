@@ -1,5 +1,5 @@
 #!/bin/bash
-VERSION="1.7.0"
+VERSION="1.7.5"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 cd "$SCRIPT_DIR"
 
