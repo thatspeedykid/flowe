@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version to build (e.g. 1.7.0)'
+        description: 'Version to build (e.g. 1.7.5)'
         required: true
         default: '1.7.5'
 
@@ -40,20 +40,13 @@ jobs:
       - name: Generate Android platform files
         run: flutter create --platforms=android .
 
-      - name: Generate icons and splash
-        run: |
-          dart run flutter_launcher_icons
-          dart run flutter_native_splash:create
+      - name: Generate Android icons
+        run: dart run flutter_launcher_icons -f pubspec_android.yaml
 
-      - name: Fix Android v2 embedding in AndroidManifest
+      - name: Fix Android v2 embedding
         run: |
           MANIFEST="android/app/src/main/AndroidManifest.xml"
-          # Remove any v1 embedding meta-data tag
           sed -i '/<meta-data.*flutterEmbedding.*value="1"/d' "$MANIFEST"
-          # Ensure v2 embedding is set
-          if ! grep -q 'flutterEmbedding' "$MANIFEST"; then
-            sed -i 's|<application|<application|' "$MANIFEST"
-          fi
           echo "AndroidManifest checked"
 
       - name: Setup signing
@@ -104,8 +97,8 @@ jobs:
       - name: Generate Windows platform files
         run: flutter create --platforms=windows .
 
-      - name: Generate icons and splash
-        run: dart run flutter_launcher_icons
+      - name: Generate Windows icons
+        run: dart run flutter_launcher_icons -f pubspec_windows.yaml
 
       - name: Patch Runner.rc
         run: python patch_rc.py
@@ -154,8 +147,8 @@ jobs:
       - name: Generate Linux platform files
         run: flutter create --platforms=linux .
 
-      - name: Generate icons and splash
-        run: dart run flutter_launcher_icons
+      - name: Generate Linux icons
+        run: dart run flutter_launcher_icons -f pubspec_linux.yaml
 
       - name: Build Linux
         run: flutter build linux --release
@@ -195,15 +188,9 @@ jobs:
       - name: Generate macOS and iOS platform files
         run: flutter create --platforms=macos,ios .
 
-      - name: Ensure iOS asset directories exist
+      - name: Generate macOS and iOS icons and splash
         run: |
-          mkdir -p ios/Runner/Assets.xcassets/AppIcon.appiconset
-          mkdir -p ios/Runner/Assets.xcassets/LaunchImage.imageset
-          mkdir -p macos/Runner/Assets.xcassets/AppIcon.appiconset
-
-      - name: Generate icons and splash
-        run: |
-          dart run flutter_launcher_icons
+          dart run flutter_launcher_icons -f pubspec_apple.yaml
           dart run flutter_native_splash:create
 
       - name: Install Apple certificates

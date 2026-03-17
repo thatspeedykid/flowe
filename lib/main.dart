@@ -203,7 +203,7 @@ class _FloShellState extends State<_FloShell> {
                   // Coffee — desktop only, not tablets
                   if (!Platform.isIOS && !Platform.isAndroid) ...[
                     GestureDetector(
-                      onTap: () => _openUrl('https://www.paypal.me/Speeddevilx'),
+                      onTap: () => _openUrl('https://buymeacoffee.com/privacychase'),
                       child: Container(
                         width: double.infinity,
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -337,7 +337,7 @@ class _FloShellState extends State<_FloShell> {
                 ))
             else
               GestureDetector(
-                onTap: () => _openUrl('https://www.paypal.me/Speeddevilx'),
+                onTap: () => _openUrl('https://buymeacoffee.com/privacychase'),
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
                   decoration: BoxDecoration(
