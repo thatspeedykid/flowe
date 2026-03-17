@@ -9,7 +9,7 @@ on:
         default: '1.7.0'
 
 env:
-  FLUTTER_VERSION: '3.29.0'
+  FLUTTER_VERSION: '3.41.4'
   VERSION: ${{ github.event.inputs.version }}
 
 jobs:
