@@ -192,13 +192,13 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
+      - name: Generate macOS and iOS platform files
+        run: flutter create --platforms=macos,ios .
+
       - name: Generate icons and splash
         run: |
           dart run flutter_launcher_icons
           dart run flutter_native_splash:create
-
-      - name: Generate macOS and iOS platform files
-        run: flutter create --platforms=macos,ios .
 
       - name: Install Apple certificates
         env:
