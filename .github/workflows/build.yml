@@ -40,6 +40,13 @@ jobs:
       - name: Generate Android platform files
         run: flutter create --platforms=android .
 
+      - name: Restore MainActivity.kt
+        run: |
+          mkdir -p android/app/src/main/kotlin/com/privacychase/flowe
+          cp android/app/src/main/kotlin/com/privacychase/flowe/MainActivity.kt \
+            android/app/src/main/kotlin/com/privacychase/flowe/MainActivity.kt.bak 2>/dev/null || true
+          git checkout android/app/src/main/kotlin/com/privacychase/flowe/MainActivity.kt
+
       - name: Inject icons
         run: bash inject_icons.sh
 
