@@ -41,7 +41,7 @@ jobs:
         run: flutter create --platforms=android .
 
       - name: Restore MainActivity.kt
-        run: git checkout android/app/src/main/kotlin/com/privacychase/flowe/MainActivity.kt
+        run: git checkout HEAD -- android/app/src/main/kotlin/com/privacychase/flowe/MainActivity.kt
 
       - name: Inject icons
         run: bash inject_icons.sh
