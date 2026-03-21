@@ -254,10 +254,147 @@ jobs:
           path: ~/Documents/flowe-builds/flowe_${{ env.VERSION }}.ipa
           retention-days: 7
 
+  macos_test:
+    name: macOS Launch Test
+    runs-on: macos-latest
+    needs: [macos]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Generate macOS platform files
+        run: flutter create --platforms=macos .
+
+      - name: Build macOS debug
+        run: flutter build macos --debug
+
+      - name: Launch app and screenshot
+        run: |
+          mkdir -p screenshots
+          open build/macos/Build/Products/Debug/flowe.app &
+          APP_PID=$!
+          sleep 10
+          screencapture -x screenshots/macos_launch.png
+          sleep 3
+          screencapture -x screenshots/macos_launch2.png
+          kill $APP_PID 2>/dev/null || true
+
+      - name: Upload screenshots
+        uses: actions/upload-artifact@v4
+        with:
+          name: screenshots-macos
+          path: screenshots/
+          retention-days: 7
+
+  windows_test:
+    name: Windows Launch Test
+    runs-on: windows-latest
+    needs: [windows]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Generate Windows platform files
+        run: flutter create --platforms=windows .
+
+      - name: Build Windows debug
+        run: flutter build windows --debug
+
+      - name: Launch app and screenshot
+        run: |
+          mkdir screenshots
+          Start-Process "build\windowsdunner\Debuglowe.exe"
+          Start-Sleep -Seconds 10
+          Add-Type -AssemblyName System.Windows.Forms
+          $screen = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds
+          $bitmap = New-Object System.Drawing.Bitmap($screen.Width, $screen.Height)
+          $graphics = [System.Drawing.Graphics]::FromImage($bitmap)
+          $graphics.CopyFromScreen($screen.Location, [System.Drawing.Point]::Empty, $screen.Size)
+          $bitmap.Save("screenshots\windows_launch.png")
+          Get-Process flowe -ErrorAction SilentlyContinue | Stop-Process -Force
+        shell: powershell
+
+      - name: Upload screenshots
+        uses: actions/upload-artifact@v4
+        with:
+          name: screenshots-windows
+          path: screenshots/
+          retention-days: 7
+
+  linux_test:
+    name: Linux Launch Test
+    runs-on: ubuntu-latest
+    needs: [linux]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install build deps
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y clang cmake ninja-build pkg-config             libgtk-3-dev libblkid-dev liblzma-dev lld binutils             xvfb x11-utils scrot
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Generate Linux platform files
+        run: flutter create --platforms=linux .
+
+      - name: Build Linux debug
+        run: flutter build linux --debug
+
+      - name: Launch app and screenshot
+        run: |
+          mkdir -p screenshots
+          # Start virtual display
+          Xvfb :99 -screen 0 1920x1080x24 &
+          export DISPLAY=:99
+          sleep 2
+          # Launch app
+          build/linux/x64/debug/bundle/flowe &
+          APP_PID=$!
+          sleep 10
+          # Take screenshot
+          scrot screenshots/linux_launch.png
+          sleep 3
+          scrot screenshots/linux_launch2.png
+          kill $APP_PID 2>/dev/null || true
+
+      - name: Upload screenshots
+        uses: actions/upload-artifact@v4
+        with:
+          name: screenshots-linux
+          path: screenshots/
+          retention-days: 7
+
   summary:
     name: Build Summary
     runs-on: ubuntu-latest
-    needs: [android, windows, linux, macos]
+    needs: [android, windows, linux, macos, macos_test, windows_test, linux_test]
     if: always()
     steps:
       - name: Download all artifacts
