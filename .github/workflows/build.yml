@@ -42,6 +42,9 @@ jobs:
           cp android/app/src/main/kotlin/com/privacychase/flowe/MainActivity.kt /tmp/MainActivity.kt.bak
           flutter create --platforms=android .
           cp /tmp/MainActivity.kt.bak android/app/src/main/kotlin/com/privacychase/flowe/MainActivity.kt
+          rm -rf android/app/src/main/kotlin/com/example
+          sed -i 's/com.example.flowe/com.privacychase.flowe/g' android/app/build.gradle.kts
+          sed -i 's/com.example.flowe/com.privacychase.flowe/g' android/build.gradle.kts 2>/dev/null || true
 
       - name: Inject icons
         run: bash inject_icons.sh
