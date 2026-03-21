@@ -37,12 +37,6 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
-      - name: Generate Android platform files
-        run: flutter create --platforms=android .
-
-      - name: Restore MainActivity.kt
-        run: git checkout HEAD -- android/app/src/main/kotlin/com/privacychase/flowe/MainActivity.kt
-
       - name: Inject icons
         run: bash inject_icons.sh
 
