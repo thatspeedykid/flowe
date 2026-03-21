@@ -37,6 +37,12 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
+      - name: Generate Android platform files
+        run: |
+          cp android/app/src/main/kotlin/com/privacychase/flowe/MainActivity.kt /tmp/MainActivity.kt.bak
+          flutter create --platforms=android .
+          cp /tmp/MainActivity.kt.bak android/app/src/main/kotlin/com/privacychase/flowe/MainActivity.kt
+
       - name: Inject icons
         run: bash inject_icons.sh
 
