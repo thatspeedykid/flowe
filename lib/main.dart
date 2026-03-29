@@ -244,7 +244,7 @@ class _FloShellState extends State<_FloShell> {
             child: Column(children: [
               SizedBox(height: (Platform.isIOS || Platform.isAndroid)
                   ? MediaQuery.of(context).viewPadding.top : 0),
-              Expanded(child: screens[widget.tab]),
+              Expanded(child: IndexedStack(index: widget.tab, children: screens)),
             ]),
           ),
         ]),
@@ -310,7 +310,7 @@ class _FloShellState extends State<_FloShell> {
             Divider(height: 1, color: border),
           ]),
         ),
-        Expanded(child: screens[widget.tab]),
+        Expanded(child: IndexedStack(index: widget.tab, children: screens)),
         Container(
           padding: EdgeInsets.only(
             left: 16, right: 16, top: 6,
@@ -388,7 +388,8 @@ class _FloShellState extends State<_FloShell> {
               _save(FloData(budgets: _cur.budgets, debts: _cur.debts,
                 extraPayment: _cur.extraPayment, assets: _cur.assets,
                 liabilities: _cur.liabilities, snapshots: _cur.snapshots,
-                events: _cur.events, darkMode: !dark, fontSize: _cur.fontSize));
+                events: _cur.events, transactions: _cur.transactions,
+                darkMode: !dark, fontSize: _cur.fontSize));
             }),
           Divider(color: border),
 
@@ -409,7 +410,8 @@ class _FloShellState extends State<_FloShell> {
                       _save(FloData(budgets: _cur.budgets, debts: _cur.debts,
                         extraPayment: _cur.extraPayment, assets: _cur.assets,
                         liabilities: _cur.liabilities, snapshots: _cur.snapshots,
-                        events: _cur.events, darkMode: _cur.darkMode, fontSize: entry.$2));
+                        events: _cur.events, transactions: _cur.transactions,
+                        darkMode: _cur.darkMode, fontSize: entry.$2));
                     },
                     child: Container(
                       width: 40, height: 36,

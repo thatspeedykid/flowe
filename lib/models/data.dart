@@ -362,7 +362,10 @@ class FloStorage {
   }
 
   static Future<void> save(FloData data) async {
-    final file = await _getFile();
-    await file.writeAsString(jsonEncode(data.toJson()));
+    try {
+      final file = await _getFile();
+      await file.parent.create(recursive: true);
+      await file.writeAsString(jsonEncode(data.toJson()));
+    } catch (_) {}
   }
 }
